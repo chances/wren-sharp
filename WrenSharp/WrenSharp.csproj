@@ -4,20 +4,14 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MSBuildTasks" Version="1.5.0.235">
-      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-      <PrivateAssets>all</PrivateAssets>
-    </PackageReference>
-  </ItemGroup>
-  <Target Name="InitWrenGitSubmodule">
-    <!-- https://natemcmaster.com/blog/2017/07/05/msbuild-task-in-nuget/ -->
-    <!-- https://stackoverflow.com/a/25919231/1363247 -->
-    <!-- https://github.com/loresoft/msbuildtasks/blob/master/Source/MSBuild.Community.Tasks/Git/GitClient.cs -->
-    <GitClient Command="submodule" Arguments="init" LocalPath="" />
-    <GitClient Command="submodule" Arguments="update" LocalPath="" />
-    <!-- TODO: Run the make command (using Exec) to run the Wren's `make vm` -->
-    <!-- https://docs.microsoft.com/en-us/visualstudio/msbuild/exec-task?view=vs-2019#remarks -->
+  <Target Name="InitWrenGitSubmodule" AfterTargets="BeforeBuild">
+    <!-- <Exec Command="ls" WorkingDirectory="$(SolutionDir)" Condition="'$(OS)' != 'Windows_NT'" /> -->
+    <!-- <Exec Command="dir" WorkingDirectory="$(SolutionDir)" Condition="'$(OS)' == 'Windows_NT'" /> -->
+    <Exec Command="git submodule init" WorkingDirectory="$(SolutionDir)" />
+    <Exec Command="git submodule update" WorkingDirectory="$(SolutionDir)" />
+    <Message Text="Compiling Wren VM..." Importance="high" />
+    <Exec Command="make vm" WorkingDirectory="$(SolutionDir)/wren" />
+    <Message Text="Compiled." Importance="high" />
   </Target>
 
 </Project>
