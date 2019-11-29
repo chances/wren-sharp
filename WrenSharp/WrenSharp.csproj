@@ -14,4 +14,17 @@
     <Message Text="Compiled." Importance="high" />
   </Target>
 
+  <PropertyGroup>
+    <IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinux>
+    <IsOsx>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</IsOsx>
+    <WrenSharedLibraryPath Condition="$(IsLinux)">$(SolutionDir)/wren/lib/libwren.so</WrenSharedLibraryPath>
+    <WrenSharedLibraryPath Condition="$(IsOsx)">$(SolutionDir)/wren/lib/libwren.dylib</WrenSharedLibraryPath>
+  </PropertyGroup>
+  <Target Name="CopyWrenSharedLibrary" AfterTargets="AfterBuild">
+    <Copy SourceFiles="$(WrenSharedLibraryPath)" DestinationFolder="$(OutDir)" />
+  </Target>
+  <Target Name="CopyWrenSharedLibraryOnPublish" AfterTargets="Publish">
+    <Copy SourceFiles="$(WrenSharedLibraryPath)" DestinationFolder="$(PublishDir)" />
+  </Target>
+
 </Project>
