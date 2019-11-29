@@ -1,5 +1,14 @@
+using System;
+using System.Runtime.InteropServices;
+
 namespace Wren
 {
-    public class Handle
-    {}
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Handle
+    {
+        ulong value;
+
+        IntPtr prev;
+        IntPtr next;
+    }
 }
