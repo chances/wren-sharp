@@ -1,4 +1,4 @@
-namespace Wren
+﻿namespace Wren
 {
     public class VirtualMachine
     {
