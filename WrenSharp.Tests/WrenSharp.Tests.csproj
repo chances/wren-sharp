@@ -7,10 +7,24 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <ProjectReference Include="../WrenSharp/WrenSharp.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
     <PackageReference Include="xunit" Version="2.4.0" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.4.0" />
     <PackageReference Include="coverlet.collector" Version="1.0.1" />
   </ItemGroup>
+
+  <PropertyGroup>
+    <IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinux>
+    <IsOsx>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</IsOsx>
+    <WrenSharedLibraryPath Condition="$(IsLinux)">$(SolutionDir)/wren/lib/libwren.so</WrenSharedLibraryPath>
+    <WrenSharedLibraryPath Condition="$(IsOsx)">$(SolutionDir)/wren/lib/libwren.dylib</WrenSharedLibraryPath>
+  </PropertyGroup>
+  <Target Name="CopyWrenSharedLibrary" AfterTargets="AfterBuild">
+    <Copy SourceFiles="$(WrenSharedLibraryPath)" DestinationFolder="$(OutDir)" />
+  </Target>
 
 </Project>

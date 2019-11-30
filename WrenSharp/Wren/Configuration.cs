@@ -129,17 +129,7 @@ namespace Wren
         public static Configuration DefaultConfiguration()
         {
             Configuration config = new Configuration();
-            config.reallocateFn = IntPtr.Zero;
-            config.resolveModuleFn = IntPtr.Zero;
-            config.loadModuleFn = IntPtr.Zero;
-            config.bindForeignMethodFn = IntPtr.Zero;
-            config.bindForeignClassFn = IntPtr.Zero;
-            config.writeFn = IntPtr.Zero;
-            config.errorFn = IntPtr.Zero;
-            config.initialHeapSize = 0;
-            config.minHeapSize = 0;
-            config.heapGrowthPercent = 0;
-            config.userData = IntPtr.Zero;
+            WrenInterop.wrenInitConfiguration(ref config);
             return config;
         }
     }
