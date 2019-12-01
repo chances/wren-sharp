@@ -44,9 +44,8 @@ namespace Wren
                 wasHandled = args.Handled;
             }
 
-            if (!wasHandled)
+            if (!wasHandled && _config.WriteToConsole)
             {
-                // TODO: Add a config option to explicitly enable defaulting to System.WriteLine
                 System.Console.Write(text);
             }
         }
