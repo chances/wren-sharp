@@ -4,11 +4,10 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
 using Microsoft.Win32.SafeHandles;
+using Wren.Internal;
 
 namespace Wren
 {
-    // TODO: marshalling delegates as callback methods? https://docs.microsoft.com/en-us/dotnet/framework/interop/marshaling-a-delegate-as-a-callback-method
-
     [SecurityPermission(SecurityAction.InheritanceDemand, UnmanagedCode = true)]
     [SecurityPermission(SecurityAction.Demand, UnmanagedCode = true)]
     internal sealed class WrenVmSafeHandle : SafeHandleZeroOrMinusOneIsInvalid
@@ -33,14 +32,14 @@ namespace Wren
         //
         // Call this before setting the particular fields you care about.
         [DllImport("libwren")]
-        internal static extern void wrenInitConfiguration(ref Configuration configuration);
+        internal static extern void wrenInitConfiguration(ref Internal.Configuration configuration);
 
         // Creates a new Wren virtual machine using the given [configuration]. Wren
         // will copy the configuration data, so the argument passed to this can be
         // freed after calling this. If [configuration] is `NULL`, uses a default
         // configuration.
         [DllImport("libwren")]
-        internal static extern WrenVmSafeHandle wrenNewVM(ref Configuration configuration);
+        internal static extern WrenVmSafeHandle wrenNewVM(ref Internal.Configuration configuration);
 
         // Disposes of all resources is use by [vm], which was previously created by a
         // call to [wrenNewVM].

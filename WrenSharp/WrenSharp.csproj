@@ -14,6 +14,7 @@
     <Message Text="Compiled." Importance="high" />
   </Target>
 
+  <!-- TODO: How to package native stuff: https://github.com/NuGet/Home/issues/6645 -->
   <PropertyGroup>
     <IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinux>
     <IsOsx>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</IsOsx>
