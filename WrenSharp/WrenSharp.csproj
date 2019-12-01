@@ -7,18 +7,18 @@
   <Target Name="InitWrenGitSubmodule" AfterTargets="BeforeBuild">
     <!-- <Exec Command="ls" WorkingDirectory="$(SolutionDir)" Condition="'$(OS)' != 'Windows_NT'" /> -->
     <!-- <Exec Command="dir" WorkingDirectory="$(SolutionDir)" Condition="'$(OS)' == 'Windows_NT'" /> -->
-    <Exec Command="git submodule init" WorkingDirectory="$(SolutionDir)" />
-    <Exec Command="git submodule update" WorkingDirectory="$(SolutionDir)" />
+    <Exec Command="git submodule init" WorkingDirectory="$(MSBuildProjectDirectory)/.." />
+    <Exec Command="git submodule update" WorkingDirectory="$(MSBuildProjectDirectory)/.." />
     <Message Text="Compiling Wren VM..." Importance="high" />
-    <Exec Command="make vm" WorkingDirectory="$(SolutionDir)/wren" />
+    <Exec Command="make vm" WorkingDirectory="$(MSBuildProjectDirectory)/../wren" />
     <Message Text="Compiled." Importance="high" />
   </Target>
 
   <PropertyGroup>
     <IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinux>
     <IsOsx>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</IsOsx>
-    <WrenSharedLibraryPath Condition="$(IsLinux)">$(SolutionDir)/wren/lib/libwren.so</WrenSharedLibraryPath>
-    <WrenSharedLibraryPath Condition="$(IsOsx)">$(SolutionDir)/wren/lib/libwren.dylib</WrenSharedLibraryPath>
+    <WrenSharedLibraryPath Condition="$(IsLinux)">$(MSBuildProjectDirectory)/../wren/lib/libwren.so</WrenSharedLibraryPath>
+    <WrenSharedLibraryPath Condition="$(IsOsx)">$(MSBuildProjectDirectory)/../wren/lib/libwren.dylib</WrenSharedLibraryPath>
   </PropertyGroup>
   <Target Name="CopyWrenSharedLibrary" AfterTargets="AfterBuild">
     <Copy SourceFiles="$(WrenSharedLibraryPath)" DestinationFolder="$(OutDir)" />
