@@ -48,14 +48,13 @@ namespace Wren
             return WrenInterop.wrenGetSlotBool(_handle, slot);
         }
 
-        public string GetSlotBytes(int slot, out int length)
+        public byte[] GetSlotBytes(int slot)
         {
-            // TODO: Figure out how to use byte[] here...
-            throw new NotImplementedException();
-            // int outLength = 0;
-            // var bytes = WrenInterop.wrenGetSlotBytes(_handle, slot, ref outLength);
-            // length = outLength;
-            // return bytes;
+            int length = 0;
+            var slotBytesPtr = WrenInterop.wrenGetSlotBytes(_handle, slot, ref length);
+            var bytes = new byte[length];
+            Marshal.Copy(slotBytesPtr, bytes, 0, length);
+            return bytes;
         }
 
         public double GetSlotDouble(int slot)
@@ -86,9 +85,12 @@ namespace Wren
             WrenInterop.wrenSetSlotBool(_handle, slot, value);
         }
 
-        public void SetSlotBytes(int slot, string bytes, uint length)
+        public void SetSlotBytes(int slot, ref byte[] bytes)
         {
-            WrenInterop.wrenSetSlotBytes(_handle, slot, bytes, length);
+            var pinnedBytes = GCHandle.Alloc(bytes, GCHandleType.Pinned);
+            var bytesPtr = pinnedBytes.AddrOfPinnedObject();
+            WrenInterop.wrenSetSlotBytes(_handle, slot, bytesPtr, (uint) bytes.Length);
+            pinnedBytes.Free();
         }
 
         public void SetSlotDouble(int slot, double value)
@@ -150,7 +152,7 @@ namespace Wren
         {
             config.writeFn = (_, text) => OnWrite(text);
             config.errorFn = (_, type, module, line, message) => OnError(type, module, line, message);
-            // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn, bindForeignMethodFn, bindForeignClassFn, errorFn)
+            // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn, bindForeignMethodFn, bindForeignClassFn)
         }
 
         private void OnWrite(string text)

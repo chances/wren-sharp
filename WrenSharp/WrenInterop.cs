@@ -156,9 +156,8 @@ namespace Wren
         // number of bytes in the array.
         //
         // It is an error to call this if the slot does not contain a string.
-        [DllImport("libwren", CharSet = CharSet.Ansi)]
-        [return : MarshalAs(UnmanagedType.LPStr)]
-        internal static extern string wrenGetSlotBytes(WrenVmSafeHandle vm, int slot, ref int length);
+        [DllImport("libwren")]
+        internal static extern IntPtr wrenGetSlotBytes(WrenVmSafeHandle vm, int slot, ref int length);
 
         // Reads a number from [slot].
         //
@@ -200,7 +199,7 @@ namespace Wren
         // The bytes are copied to a new string within Wren's heap, so you can free
         // memory used by them after this is called.
         [DllImport("libwren")]
-        internal static extern void wrenSetSlotBytes(WrenVmSafeHandle vm, int slot, [MarshalAs(UnmanagedType.LPStr)] string bytes, uint length);
+        internal static extern void wrenSetSlotBytes(WrenVmSafeHandle vm, int slot, IntPtr bytes, uint length);
 
         // Stores the numeric [value] in [slot].
         [DllImport("libwren")]

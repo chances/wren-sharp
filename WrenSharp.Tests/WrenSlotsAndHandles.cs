@@ -1,3 +1,4 @@
+using System.Text;
 using Wren;
 using Xunit;
 
@@ -64,6 +65,33 @@ namespace WrenSharp.Tests
 
             Assert.Matches(expectedFirstSlot, vm.GetSlotString(0));
             Assert.Matches(expectedSecondSlot, vm.GetSlotString(1));
+
+            vm.Dispose();
+        }
+
+        [Fact]
+        public void SetByteArrayToSlot()
+        {
+            var expectedNumSlots = 1;
+            var expectedString = "The quick brown fox";
+            var expectedSlot = Encoding.UTF8.GetBytes(expectedString);
+            var expectedBytesLength = expectedSlot.Length;
+
+            var vm = new VirtualMachine();
+
+            // Sequester some slots
+            vm.EnsureSlots(expectedNumSlots);
+            var numSlots = vm.GetSlotCount();
+            Assert.True(numSlots == expectedNumSlots);
+
+            // Set and then assert slots' values
+            vm.SetSlotBytes(0, ref expectedSlot);
+            Assert.True(vm.GetSlotType(0) == ValueType.WREN_TYPE_STRING);
+
+            var bytes = vm.GetSlotBytes(0);
+            Assert.True(bytes.Length == expectedBytesLength);
+            var bytesAsString = Encoding.UTF8.GetString(bytes, 0, bytes.Length);
+            Assert.Matches(expectedString, bytesAsString);
 
             vm.Dispose();
         }
