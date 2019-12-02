@@ -8,9 +8,9 @@ namespace Wren
         private WrenVmSafeHandle _handle;
         private Configuration _config;
 
-        public VirtualMachine(Configuration config)
+        public VirtualMachine(Configuration config = null)
         {
-            _config = config;
+            _config = config ?? new Configuration();
             var nativeConfig = Internal.Configuration.DefaultConfiguration();
             // TODO: Convert friendly config to native config
             WireEvents(ref nativeConfig);
@@ -21,6 +21,7 @@ namespace Wren
         ///
         /// If unhandled, printed text is discarded.
         public event WriteEventHandler Write;
+        public event ErrorEventHandler Error;
 
         public InterpretResult Interpret(string module, string source)
         {
@@ -30,6 +31,7 @@ namespace Wren
         private void WireEvents(ref Internal.Configuration config)
         {
             config.writeFn = (_, text) => OnWrite(text);
+            config.errorFn = (_, type, module, line, message) => OnError(type, module, line, message);
             // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn, bindForeignMethodFn, bindForeignClassFn, errorFn)
         }
 
@@ -39,7 +41,7 @@ namespace Wren
 
             if (Write != null)
             {
-                WriteEventArgs args = new WriteEventArgs(text);
+                var args = new WriteEventArgs(text);
                 Write(this, args);
                 wasHandled = args.Handled;
             }
@@ -47,6 +49,20 @@ namespace Wren
             if (!wasHandled && _config.WriteToConsole)
             {
                 System.Console.Write(text);
+            }
+        }
+
+        private void OnError(ErrorType type, string module, int line, string message)
+        {
+            if (Error != null)
+            {
+                var args = new ErrorEventArgs(type, module, line, message);
+                Error(this, args);
+            }
+
+            if (_config.RaiseExceptionOnError)
+            {
+                throw new WrenException(type, module, line, message);
             }
         }
 

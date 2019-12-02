@@ -1,10 +1,13 @@
 using System;
 using System.Runtime.InteropServices;
-using Wren;
 
 namespace Wren.Internal
 {
     internal delegate void WrenWriteFn(IntPtr vm, [MarshalAs(UnmanagedType.LPStr)] string text);
+    internal delegate void WrenErrorFn(IntPtr vm, ErrorType type,
+        [MarshalAs(UnmanagedType.LPStr)] string module,
+        int line,
+        [MarshalAs(UnmanagedType.LPStr)] string message);
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Configuration
@@ -84,13 +87,13 @@ namespace Wren.Internal
         /// If this is `NULL`, Wren discards any printed text.
         public WrenWriteFn writeFn;
 
+        [MarshalAs(UnmanagedType.FunctionPtr)]
         /// The callback Wren uses to report errors.
         ///
         /// When an error occurs, this will be called with the module name, line
         /// number, and an error message. If this is `NULL`, Wren doesn't report any
         /// errors.
-        public IntPtr errorFn; //   WrenErrorFn
-        // TODO: What to do on Wren errors? Throw an exception?
+        public WrenErrorFn errorFn;
 
         /// The number of bytes Wren will allocate before triggering the first garbage
         /// collection.
