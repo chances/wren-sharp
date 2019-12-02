@@ -115,5 +115,38 @@ namespace WrenSharp.Tests
 
             vm.Dispose();
         }
+
+        [Fact]
+        public void InsertListItems()
+        {
+            var expectedNumSlots = 2;
+            var expectedFirstItem = 2.5d;
+            var expectedSecondItem = 14.5d;
+
+            var vm = new VirtualMachine();
+            var result = vm.Interpret("lists", "var foo = []");
+            Assert.True(result == InterpretResult.WREN_RESULT_SUCCESS);
+
+            // Sequester some slots
+            vm.EnsureSlots(expectedNumSlots);
+            var numSlots = vm.GetSlotCount();
+            Assert.True(numSlots == expectedNumSlots);
+
+            vm.GetVariable("lists", "foo", 0);
+            Assert.True(vm.GetSlotType(0) == ValueType.WREN_TYPE_LIST);
+            vm.SetSlotDouble(1, expectedFirstItem);
+            vm.InsertInList(0, -1, 1);
+            vm.SetSlotDouble(1, expectedSecondItem);
+            vm.InsertInList(0, -1, 1);
+
+            result = vm.Interpret("lists", "var fooLength = foo.count");
+            Assert.True(result == InterpretResult.WREN_RESULT_SUCCESS);
+
+            vm.GetVariable("lists", "fooLength", 0);
+            Assert.True(vm.GetSlotType(0) == ValueType.WREN_TYPE_NUM);
+            Assert.True(vm.GetSlotDouble(0) == expectedNumSlots);
+
+            vm.Dispose();
+        }
     }
 }

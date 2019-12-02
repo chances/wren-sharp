@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 
 namespace Wren
@@ -106,8 +106,7 @@ namespace Wren
 
         public void SetSlotNewList(int slot)
         {
-            throw new NotImplementedException();
-            // TODO: WrenInterop.wrenSetSlotNewList(_handle, int slot);
+            WrenInterop.wrenSetSlotNewList(_handle, slot);
         }
 
         public void SetSlotNull(int slot)
@@ -133,14 +132,12 @@ namespace Wren
 
         public void GetListElement(int listSlot, int index, int elementSlot)
         {
-            throw new NotImplementedException();
-            // TODO: WrenInterop.wrenGetListElement(_handle, int listSlot, int index, int elementSlot);
+            WrenInterop.wrenGetListElement(_handle, listSlot, index, elementSlot);
         }
 
         public void InsertInList(int listSlot, int index, int elementSlot)
         {
-            throw new NotImplementedException();
-            // TODO: WrenInterop.wrenInsertInList(_handle, int listSlot, int index, int elementSlot);
+            WrenInterop.wrenInsertInList(_handle, listSlot, index, elementSlot);
         }
 
         public void GetVariable(string module, string name, int slot)
