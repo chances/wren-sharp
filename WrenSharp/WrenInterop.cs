@@ -137,7 +137,7 @@ namespace Wren
 
         // Gets the type of the object in [slot].
         [DllImport("libwren")]
-        internal static extern Type wrenGetSlotType(WrenVmSafeHandle vm, int slot);
+        internal static extern ValueType wrenGetSlotType(WrenVmSafeHandle vm, int slot);
 
         // Reads a boolean value from [slot].
         //

@@ -1,6 +1,6 @@
-namespace Wren
+﻿namespace Wren
 {
-    public enum Type
+    public enum ValueType
     {
         WREN_TYPE_BOOL = 0,
         WREN_TYPE_NUM = 1,
