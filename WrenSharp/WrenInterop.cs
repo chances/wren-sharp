@@ -143,6 +143,7 @@ namespace Wren
         //
         // It is an error to call this if the slot does not contain a boolean value.
         [DllImport("libwren")]
+        [return : MarshalAs(UnmanagedType.U1)]
         internal static extern bool wrenGetSlotBool(WrenVmSafeHandle vm, int slot);
 
         // Reads a byte array from [slot].
@@ -193,7 +194,7 @@ namespace Wren
 
         // Stores the boolean [value] in [slot].
         [DllImport("libwren")]
-        internal static extern void wrenSetSlotBool(WrenVmSafeHandle vm, int slot, bool value);
+        internal static extern void wrenSetSlotBool(WrenVmSafeHandle vm, int slot, [MarshalAs(UnmanagedType.U1)] bool value);
 
         // Stores the array [length] of [bytes] in [slot].
         //
