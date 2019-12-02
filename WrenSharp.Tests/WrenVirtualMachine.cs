@@ -11,7 +11,7 @@ namespace WrenSharp.Tests
         [Fact]
         public void InitWrenVM()
         {
-            var vm = new VirtualMachine(new Configuration());
+            var vm = new VirtualMachine();
             var result = vm.Interpret("my_module", "System.print(\"I am running in a VM!\")");
             Assert.True(result == InterpretResult.WREN_RESULT_SUCCESS);
             vm.Dispose();
@@ -22,7 +22,7 @@ namespace WrenSharp.Tests
         {
             var expectedText = "I am running in a VM!";
 
-            var vm = new VirtualMachine(new Configuration());
+            var vm = new VirtualMachine();
             var text = new StringBuilder();
             vm.Write += (_vm, writtenText) => text.Append(writtenText.Text);
             var result = vm.Interpret("my_module", $"System.print(\"{expectedText}\")");
