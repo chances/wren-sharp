@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 
 namespace Wren
@@ -141,6 +141,11 @@ namespace Wren
         {
             throw new NotImplementedException();
             // TODO: WrenInterop.wrenInsertInList(_handle, int listSlot, int index, int elementSlot);
+        }
+
+        public void GetVariable(string module, string name, int slot)
+        {
+            WrenInterop.wrenGetVariable(_handle, module, name, slot);
         }
 
         public void AbortFiber(int slot)

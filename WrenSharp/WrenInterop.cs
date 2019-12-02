@@ -260,8 +260,7 @@ namespace Wren
         // Looks up the top level variable with [name] in resolved [module] and stores
         // it in [slot].
         [DllImport("libwren")]
-        internal static extern void wrenGetVariable(WrenVmSafeHandle vm, [MarshalAs(UnmanagedType.LPStr)] string module, [MarshalAs(UnmanagedType.LPStr)] string name,
-                            int slot);
+        internal static extern void wrenGetVariable(WrenVmSafeHandle vm, [MarshalAs(UnmanagedType.LPStr)] string module, [MarshalAs(UnmanagedType.LPStr)] string name, int slot);
 
         // Sets the current fiber to be aborted, and uses the value in [slot] as the
         // runtime error object.

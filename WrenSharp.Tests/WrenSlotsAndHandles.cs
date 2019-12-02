@@ -95,5 +95,25 @@ namespace WrenSharp.Tests
 
             vm.Dispose();
         }
+
+        [Fact]
+        public void LookupVariable()
+        {
+            var vm = new VirtualMachine();
+            var result = vm.Interpret("vars", "var foo = \"bar\"");
+            Assert.True(result == InterpretResult.WREN_RESULT_SUCCESS);
+
+            // Sequester some slots
+            var expectedNumSlots = 1;
+            vm.EnsureSlots(expectedNumSlots);
+            var numSlots = vm.GetSlotCount();
+            Assert.True(numSlots == expectedNumSlots);
+
+            vm.GetVariable("vars", "foo", 0);
+            Assert.True(vm.GetSlotType(0) == ValueType.WREN_TYPE_STRING);
+            Assert.Matches("bar", vm.GetSlotString(0));
+
+            vm.Dispose();
+        }
     }
 }
