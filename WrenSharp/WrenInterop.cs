@@ -181,9 +181,8 @@ namespace Wren
         // function returns, since the garbage collector may reclaim it.
         //
         // It is an error to call this if the slot does not contain a string.
-        [DllImport("libwren", CharSet = CharSet.Ansi)]
-        [return : MarshalAs(UnmanagedType.LPStr)]
-        internal static extern string wrenGetSlotString(WrenVmSafeHandle vm, int slot);
+        [DllImport("libwren")]
+        internal static extern IntPtr wrenGetSlotString(WrenVmSafeHandle vm, int slot);
 
         // Creates a handle for the value stored in [slot].
         //

@@ -21,7 +21,7 @@ namespace WrenSharp.Tests
         [Fact]
         public void SetPrimitiveValuesToSlots()
         {
-            var expectedNumSlots = 2;
+            var expectedNumSlots = 3;
             var expectedFirstSlot = false;
             var expectedThirdSlot = 14.5d;
 
@@ -40,6 +40,30 @@ namespace WrenSharp.Tests
             Assert.True(expectedFirstSlot == vm.GetSlotBool(0));
             Assert.True(vm.GetSlotType(1) == ValueType.WREN_TYPE_NULL);
             Assert.True(expectedThirdSlot == vm.GetSlotDouble(2));
+
+            vm.Dispose();
+        }
+
+        [Fact]
+        public void SetStringsToSlots()
+        {
+            var expectedNumSlots = 2;
+            var expectedFirstSlot = "foo";
+            var expectedSecondSlot = "The quick brown fox";
+
+            var vm = new VirtualMachine();
+
+            // Sequester some slots
+            vm.EnsureSlots(expectedNumSlots);
+            var numSlots = vm.GetSlotCount();
+            Assert.True(numSlots == expectedNumSlots);
+
+            // Set and then assert slots' values
+            vm.SetSlotString(0, expectedFirstSlot);
+            vm.SetSlotString(1, expectedSecondSlot);
+
+            Assert.Matches(expectedFirstSlot, vm.GetSlotString(0));
+            Assert.Matches(expectedSecondSlot, vm.GetSlotString(1));
 
             vm.Dispose();
         }

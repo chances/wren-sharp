@@ -71,7 +71,8 @@ namespace Wren
 
         public string GetSlotString(int slot)
         {
-            return WrenInterop.wrenGetSlotString(_handle, slot);
+            var stringPointer = WrenInterop.wrenGetSlotString(_handle, slot);
+            return Marshal.PtrToStringAnsi(stringPointer);
         }
 
         public Handle GetSlotHandle(int slot)
