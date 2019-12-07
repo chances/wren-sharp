@@ -1,11 +1,11 @@
-using System.Text;
+﻿using System.Text;
 using Wren;
 using Xunit;
 
 namespace WrenSharp.Tests
 {
-    // http://wren.io/embedding/slots-and-handles.html
-    public class WrenSlotsAndHandles
+    // http://wren.io/embedding/slots-and-handles.html#the-slot-array
+    public class WrenSlots
     {
         [Fact]
         public void EnsureSlots()
