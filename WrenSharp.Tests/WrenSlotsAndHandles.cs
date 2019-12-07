@@ -138,13 +138,37 @@ namespace WrenSharp.Tests
             vm.InsertInList(0, -1, 1);
             vm.SetSlotDouble(1, expectedSecondItem);
             vm.InsertInList(0, -1, 1);
+            Assert.True(vm.GetListCount(0) == expectedNumSlots);
 
-            result = vm.Interpret("lists", "var fooLength = foo.count");
+            vm.Dispose();
+        }
+
+        [Fact]
+        public void GetListItems()
+        {
+            var expectedNumSlots = 2;
+            var expectedFirstItem = 2.5d;
+            var expectedSecondItem = "foobar";
+
+            var vm = new VirtualMachine();
+            var result = vm.Interpret("lists", "var foo = [2.5, \"foobar\"]");
             Assert.True(result == InterpretResult.WREN_RESULT_SUCCESS);
 
-            vm.GetVariable("lists", "fooLength", 0);
-            Assert.True(vm.GetSlotType(0) == ValueType.WREN_TYPE_NUM);
-            Assert.True(vm.GetSlotDouble(0) == expectedNumSlots);
+            // Sequester some slots
+            vm.EnsureSlots(expectedNumSlots);
+            var numSlots = vm.GetSlotCount();
+            Assert.True(numSlots == expectedNumSlots);
+
+            vm.GetVariable("lists", "foo", 0);
+            Assert.True(vm.GetSlotType(0) == ValueType.WREN_TYPE_LIST);
+
+            vm.GetListElement(0, 0, 1);
+            Assert.True(vm.GetSlotType(1) == ValueType.WREN_TYPE_NUM);
+            Assert.True(vm.GetSlotDouble(1) == expectedFirstItem);
+
+            vm.GetListElement(0, 1, 1);
+            Assert.True(vm.GetSlotType(1) == ValueType.WREN_TYPE_STRING);
+            Assert.True(vm.GetSlotString(1) == expectedSecondItem);
 
             vm.Dispose();
         }
