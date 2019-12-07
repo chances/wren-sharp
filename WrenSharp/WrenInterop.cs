@@ -4,7 +4,6 @@ using System.Runtime.InteropServices;
 using System.Security;
 using System.Security.Permissions;
 using Microsoft.Win32.SafeHandles;
-using Wren.Internal;
 
 namespace Wren
 {
@@ -65,7 +64,7 @@ namespace Wren
         // When you are done with this handle, it must be released using
         // [wrenReleaseHandle].
         [DllImport("libwren")]
-        internal static extern ref Handle wrenMakeCallHandle(WrenVmSafeHandle vm, [MarshalAs(UnmanagedType.LPStr)] string signature);
+        internal static extern WrenHandleSafeHandle wrenMakeCallHandle(WrenVmSafeHandle vm, [MarshalAs(UnmanagedType.LPStr)] string signature);
 
         // Calls [method], using the receiver and arguments previously set up on the
         // stack.
@@ -78,12 +77,12 @@ namespace Wren
         //
         // After this returns, you can access the return value from slot 0 on the stack.
         [DllImport("libwren")]
-        internal static extern InterpretResult wrenCall(WrenVmSafeHandle vm, ref Handle method);
+        internal static extern InterpretResult wrenCall(WrenVmSafeHandle vm, WrenHandleSafeHandle method);
 
         // Releases the reference stored in [handle]. After calling this, [handle] can
         // no longer be used.
         [DllImport("libwren")]
-        internal static extern void wrenReleaseHandle(WrenVmSafeHandle vm, ref Handle handle);
+        internal static extern void wrenReleaseHandle(WrenVmSafeHandle vm, IntPtr handle);
 
         // The following functions are intended to be called from foreign methods or
         // finalizers. The interface Wren provides to a foreign method is like a
@@ -188,7 +187,7 @@ namespace Wren
         // This will prevent the object that is referred to from being garbage collected
         // until the handle is released by calling [wrenReleaseHandle()].
         [DllImport("libwren")]
-        internal static extern ref Handle wrenGetSlotHandle(WrenVmSafeHandle vm, int slot);
+        internal static extern WrenHandleSafeHandle wrenGetSlotHandle(WrenVmSafeHandle vm, int slot);
 
         // Stores the boolean [value] in [slot].
         [DllImport("libwren")]
@@ -238,7 +237,7 @@ namespace Wren
         //
         // This does not release the handle for the value.
         [DllImport("libwren")]
-        internal static extern void wrenSetSlotHandle(WrenVmSafeHandle vm, int slot, ref Handle handle);
+        internal static extern void wrenSetSlotHandle(WrenVmSafeHandle vm, int slot, WrenHandleSafeHandle handle);
 
         // Returns the number of elements in the list stored in [slot].
         [DllImport("libwren")]

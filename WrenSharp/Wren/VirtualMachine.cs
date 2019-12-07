@@ -8,6 +8,8 @@ namespace Wren
         private WrenVmSafeHandle _handle;
         private Configuration _config;
 
+        internal WrenVmSafeHandle Handle => _handle;
+
         public VirtualMachine(Configuration config = null)
         {
             _config = config ?? new Configuration();
@@ -26,6 +28,16 @@ namespace Wren
         public InterpretResult Interpret(string module, string source)
         {
             return WrenInterop.wrenInterpret(_handle, module, source);
+        }
+
+        public Handle MakeCallHandle(string signature)
+        {
+            return new Handle(this, WrenInterop.wrenMakeCallHandle(_handle, signature));
+        }
+
+        public InterpretResult Call(Handle method)
+        {
+            return WrenInterop.wrenCall(_handle, method.RawHandle);
         }
 
         public int GetSlotCount()
@@ -76,8 +88,7 @@ namespace Wren
 
         public Handle GetSlotHandle(int slot)
         {
-            throw new NotImplementedException();
-            // TODO: return WrenInterop.wrenGetSlotHandle(_handle, int slot);
+            return new Handle(this, WrenInterop.wrenGetSlotHandle(_handle, slot));
         }
 
         public void SetSlotBool(int slot, bool value)
@@ -121,8 +132,7 @@ namespace Wren
 
         public void SetSlotHandle(int slot, Handle handle)
         {
-            throw new NotImplementedException();
-            // TODO: WrenInterop.wrenSetSlotHandle(_handle, int slot, WrenHandle* handle);
+            WrenInterop.wrenSetSlotHandle(_handle, slot, handle.RawHandle);
         }
 
         public int GetListCount(int slot)
