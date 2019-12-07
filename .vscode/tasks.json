@@ -24,6 +24,9 @@
             "args": [
                 "test",
                 "${workspaceFolder}/WrenSharp.Tests/WrenSharp.Tests.csproj",
+                "/p:CollectCoverage=true",
+                "/p:CoverletOutputFormat=\"lcov,opencover\"",
+                "/p:CoverletOutput=coverage/",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary"
             ],
@@ -32,6 +35,22 @@
                 "kind": "test",
                 "isDefault": true
             }
+        },
+        {
+            "label": "cover",
+            "dependsOn": "test",
+            "command": "dotnet",
+            "type": "process",
+            "args": [
+                "reportgenerator",
+                "-reports:coverage/coverage.opencover.xml",
+                "-targetdir:coverage"
+            ],
+            "options": {
+                "cwd": "${workspaceFolder}/WrenSharp.Tests"
+            },
+            "problemMatcher": "$msCompile",
+            "group": "test"
         },
         {
             "label": "publish",
