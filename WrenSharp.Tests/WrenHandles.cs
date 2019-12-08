@@ -17,8 +17,6 @@ namespace WrenSharp.Tests
             // Sequester some slots
             var expectedNumSlots = 1;
             vm.EnsureSlots(expectedNumSlots);
-            var numSlots = vm.GetSlotCount();
-            Assert.True(numSlots == expectedNumSlots);
 
             vm.GetVariable("vars", "foo", 0);
             Assert.True(vm.GetSlotType(0) == ValueType.WREN_TYPE_STRING);
@@ -32,8 +30,6 @@ namespace WrenSharp.Tests
 
             // Sequester some slots
             vm.EnsureSlots(expectedNumSlots);
-            numSlots = vm.GetSlotCount();
-            Assert.True(numSlots >= expectedNumSlots);
 
             var expectedFirstSlot = "bar";
 
