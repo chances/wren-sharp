@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 
 namespace Wren
@@ -16,7 +17,7 @@ namespace Wren
             _config = config ?? new Configuration();
             var nativeConfig = Internal.Configuration.DefaultConfiguration();
             // TODO: Convert friendly config to native config
-            WireEvents(ref nativeConfig);
+            WireCallbacks(ref nativeConfig);
             _handle = WrenInterop.wrenNewVM(ref nativeConfig);
         }
 
@@ -179,11 +180,40 @@ namespace Wren
             WrenInterop.wrenAbortFiber(_handle, slot);
         }
 
-        private void WireEvents(ref Internal.Configuration config)
+        private void WireCallbacks(ref Internal.Configuration config)
         {
+            if (_config.BindForeignMethod != null)
+            {
+                config.bindForeignMethodFn = OnBindForeignMethod;
+            }
+
             config.writeFn = (_, text) => OnWrite(text);
             config.errorFn = (_, type, module, line, message) => OnError(type, module, line, message);
-            // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn, bindForeignMethodFn, bindForeignClassFn)
+            // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn, bindForeignClassFn)
+        }
+
+        private HashSet<Internal.WrenForeignMethodFn> _foreignMethods = new HashSet<Internal.WrenForeignMethodFn>();
+        private Internal.WrenForeignMethodFn _nullHandler = (_) => {};
+
+        private IntPtr OnBindForeignMethod(IntPtr vm, string module, string className, bool isStatic, string signature)
+        {
+            var foreignMethod = _config.BindForeignMethod(this, module, className, isStatic, signature);
+            var handler = _nullHandler;
+            if (foreignMethod != null)
+            {
+                handler = (_) =>
+                {
+                    foreignMethod(this);
+                };
+            }
+
+            // Ensure handles to foreign methods are kept reachable
+            if (handler != _nullHandler && !_foreignMethods.Contains(handler))
+            {
+                _foreignMethods.Add(handler);
+            }
+
+            return Marshal.GetFunctionPointerForDelegate(handler);
         }
 
         private void OnWrite(string text)
@@ -205,6 +235,8 @@ namespace Wren
 
         private void OnError(ErrorType type, string module, int line, string message)
         {
+            // TODO: Handle stack trace errors
+
             if (Error != null)
             {
                 var args = new ErrorEventArgs(type, module, line, message);

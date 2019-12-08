@@ -3,6 +3,14 @@ using System.Runtime.InteropServices;
 
 namespace Wren.Internal
 {
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void WrenForeignMethodFn(IntPtr vm);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate IntPtr WrenBindForeignMethodFn(IntPtr vm,
+        [MarshalAs(UnmanagedType.LPStr)] string module,
+        [MarshalAs(UnmanagedType.LPStr)] string className,
+        bool isStatic,
+        [MarshalAs(UnmanagedType.LPStr)] string signature);
     internal delegate void WrenWriteFn(IntPtr vm, [MarshalAs(UnmanagedType.LPStr)] string text);
     internal delegate void WrenErrorFn(IntPtr vm, ErrorType type,
         [MarshalAs(UnmanagedType.LPStr)] string module,
@@ -12,7 +20,6 @@ namespace Wren.Internal
     [StructLayout(LayoutKind.Sequential)]
     internal struct Configuration
     {
-
         /// The callback Wren will use to allocate, reallocate, and deallocate memory.
         ///
         /// If `NULL`, defaults to a built-in function that uses `realloc` and `free`.
@@ -61,6 +68,7 @@ namespace Wren.Internal
         /// should return NULL and Wren will report that as a runtime error.
         public IntPtr loadModuleFn; //   WrenLoadModuleFn
 
+        [MarshalAs(UnmanagedType.FunctionPtr)]
         /// The callback Wren uses to find a foreign method and bind it to a class.
         ///
         /// When a foreign method is declared in a class, this will be called with the
@@ -70,7 +78,7 @@ namespace Wren.Internal
         ///
         /// If the foreign function could not be found, this should return NULL and
         /// Wren will report it as runtime error.
-        public IntPtr bindForeignMethodFn; //   WrenBindForeignMethodFn
+        public WrenBindForeignMethodFn bindForeignMethodFn;
 
         /// The callback Wren uses to find a foreign class and get its foreign methods.
         ///
