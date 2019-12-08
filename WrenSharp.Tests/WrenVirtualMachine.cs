@@ -28,6 +28,7 @@ namespace WrenSharp.Tests
             var result = vm.Interpret("my_module", $"System.print(\"{expectedText}\")");
             Assert.True(result == InterpretResult.WREN_RESULT_SUCCESS);
             Assert.StartsWith(expectedText, text.ToString());
+
             vm.Dispose();
         }
 
@@ -40,8 +41,30 @@ namespace WrenSharp.Tests
             var text = new StringBuilder();
             vm.Error += (_vm, error) => text.Append($"{error.Module}({error.Line}): {error.Message}");
             var result = vm.Interpret("my_module", "foo");
-            Assert.True(result == InterpretResult.WREN_RESULT_COMPILE_ERROR);
+            Assert.True(result == InterpretResult.WREN_RESULT_COMPILE_ERROR, "VM compile-time error");
             Assert.StartsWith(expectedError, text.ToString());
+
+            vm.Dispose();
+        }
+
+        [Fact]
+        public void WrenThrowsOnError()
+        {
+            var expectedErrorModule = "my_module";
+            var expectedErrorLine = 1;
+            var expectedError = "Error at 'foo': Variable is used but not defined.";
+
+            var vm = new VirtualMachine(new Configuration
+            {
+                RaiseExceptionOnError = true
+            });
+
+            var ex = Assert.Throws<WrenException>(() => { vm.Interpret(expectedErrorModule, "foo"); });
+            Assert.True(ex.Type == ErrorType.WREN_ERROR_COMPILE, "VM compile-time error");
+            Assert.True(ex.Module == expectedErrorModule, $"Error in module '{expectedErrorModule}'");
+            Assert.True(ex.Line == expectedErrorLine, "Error on line one");
+            Assert.StartsWith(expectedError, ex.Message);
+
             vm.Dispose();
         }
     }

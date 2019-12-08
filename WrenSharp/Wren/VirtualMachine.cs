@@ -7,6 +7,7 @@ namespace Wren
     {
         private WrenVmSafeHandle _handle;
         private Configuration _config;
+        private WrenException _lastError = null;
 
         internal WrenVmSafeHandle Handle => _handle;
 
@@ -27,7 +28,16 @@ namespace Wren
 
         public InterpretResult Interpret(string module, string source)
         {
-            return WrenInterop.wrenInterpret(_handle, module, source);
+            var result = WrenInterop.wrenInterpret(_handle, module, source);
+
+            if (_config.RaiseExceptionOnError && _lastError != null)
+            {
+                var error = _lastError;
+                _lastError = null;
+                throw error;
+            }
+
+            return result;
         }
 
         public Handle MakeCallHandle(string signature)
@@ -37,7 +47,16 @@ namespace Wren
 
         public InterpretResult Call(Handle method)
         {
-            return WrenInterop.wrenCall(_handle, method.RawHandle);
+            var result = WrenInterop.wrenCall(_handle, method.RawHandle);
+
+            if (_config.RaiseExceptionOnError && _lastError != null)
+            {
+                var error = _lastError;
+                _lastError = null;
+                throw error;
+            }
+
+            return result;
         }
 
         public int GetSlotCount()
@@ -194,7 +213,7 @@ namespace Wren
 
             if (_config.RaiseExceptionOnError)
             {
-                throw new WrenException(type, module, line, message);
+                _lastError = new WrenException(type, module, line, message);
             }
         }
 
