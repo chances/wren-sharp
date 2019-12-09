@@ -235,7 +235,7 @@ namespace Wren
 
         private void OnError(ErrorType type, string module, int line, string message)
         {
-            // TODO: Handle stack trace errors
+            // TODO: Handle stack trace errors http://wren.io/embedding/configuring-the-vm.html#errorfn
 
             if (Error != null)
             {
