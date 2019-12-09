@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Wren
@@ -11,6 +12,9 @@ namespace Wren
         private WrenException _lastError = null;
 
         internal WrenVmSafeHandle Handle => _handle;
+        private HashSet<Internal.WrenForeignMethodFn> _foreignMethods = new HashSet<Internal.WrenForeignMethodFn>();
+        private readonly Internal.WrenForeignMethodFn _nullHandler = (_) => {};
+        private HashSet<GCHandle> _foreignObjects = new HashSet<GCHandle>();
 
         public VirtualMachine(Configuration config = null)
         {
@@ -94,10 +98,27 @@ namespace Wren
             return WrenInterop.wrenGetSlotDouble(_handle, slot);
         }
 
-        public IntPtr GetSlotForeign(int slot)
+        /// <summary>
+        /// Reads a foreign object from [slot] and returns the foreign data stored with it.
+        /// </summary>
+        /// <param name="slot"></param>
+        /// <returns>Foreign data stored with the foreign object.</returns>
+        /// <remarks>Returned data may be null.
+        /// 
+        /// It is an error to call this if the slot does not contain an instance of a foreign
+        /// class.</remarks>
+        public object GetSlotForeign(int slot)
         {
-            throw new NotImplementedException();
-            // TODO: WrenInterop.wrenGetSlotForeign(_handle, int slot);
+            var foreignPtr = WrenInterop.wrenGetSlotForeign(_handle, slot);
+            var foreignObjectPtr = Marshal.ReadIntPtr(foreignPtr);
+            if (foreignObjectPtr.ToInt64() == IntPtr.Zero.ToInt64())
+            {
+                return null;
+            }
+            var foreignObjectHandle = GCHandle.FromIntPtr(foreignObjectPtr);
+            var foreignObject = foreignObjectHandle.Target;
+            foreignObjectHandle.Free();
+            return foreignObject;
         }
 
         public string GetSlotString(int slot)
@@ -129,10 +150,31 @@ namespace Wren
             WrenInterop.wrenSetSlotDouble(_handle, slot, value);
         }
 
-        public void SetSlotNewForeign(int slot, int classSlot, uint size)
+        /// <summary>
+        /// Overwrite the raw object data of a foreign class instance stored in [slot].
+        /// </summary>
+        /// <param name="slot"></param>
+        /// <param name="foreignObject"></param>
+        public void SetSlotForeign(int slot, object foreignObject)
         {
-            throw new NotImplementedException();
-            // TODO: WrenInterop.wrenSetSlotNewForeign(_handle, int slot, int classSlot, uint size);
+            var foreignPtr = WrenInterop.wrenGetSlotForeign(_handle, slot);
+            SetForeignObject(foreignPtr, foreignObject);
+        }
+
+        /// <summary>
+        /// Creates a new instance of the foreign class stored in [classSlot] with raw object
+        /// storage and places the resulting object in [slot].
+        /// </summary>
+        /// <param name="slot">Destination slot where the new foreign object should be placed. When
+        /// you’re calling this in a foreign class’s allocate callback, this should be 0.</param>
+        /// <param name="classSlot">Where the foreign class being constructed can be found. When
+        /// the VM calls an allocate callback for a foreign class, the class itself is already in slot 0.</param>
+        /// <param name="foreignObject">Initial value of the foreign data.</param>
+        /// <remarks>The raw storage size is fixed because WrenSharp manages foreign data as pointers to CLR objects.</returns>
+        public void SetSlotNewForeign(int slot, int classSlot, object foreignObject = null)
+        {
+            var foreignPtr = WrenInterop.wrenSetSlotNewForeign(_handle, slot, classSlot, (uint) IntPtr.Size);
+            SetForeignObject(foreignPtr, foreignObject);
         }
 
         public void SetSlotNewList(int slot)
@@ -192,8 +234,18 @@ namespace Wren
             // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn, bindForeignClassFn)
         }
 
-        private HashSet<Internal.WrenForeignMethodFn> _foreignMethods = new HashSet<Internal.WrenForeignMethodFn>();
-        private Internal.WrenForeignMethodFn _nullHandler = (_) => {};
+        private void SetForeignObject(IntPtr foreignPtr, object foreignObject)
+        {
+            var foreignObjectPtr = IntPtr.Zero;
+            if (foreignObject != null)
+            {
+                // Keep a handle on the object to prevent GC of it
+                var foreignObjectHandle = GCHandle.Alloc(foreignObject);
+                _foreignObjects.Add(foreignObjectHandle);
+                foreignObjectPtr = GCHandle.ToIntPtr(foreignObjectHandle);
+            }
+            Marshal.WriteIntPtr(foreignPtr, foreignObjectPtr);
+        }
 
         private IntPtr OnBindForeignMethod(IntPtr vm, string module, string className, bool isStatic, string signature)
         {
@@ -258,7 +310,13 @@ namespace Wren
             {
                 if (disposing)
                 {
-                    // Dispose managed state (managed objects).
+                    foreach (var foreignObject in _foreignObjects)
+                    {
+                        foreignObject.Free();
+                    }
+
+                    _foreignMethods.Clear();
+                    _foreignObjects.Clear();
                 }
 
                 _handle.Dispose();

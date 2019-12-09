@@ -6,16 +6,29 @@ namespace Wren.Internal
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate void WrenForeignMethodFn(IntPtr vm);
     [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate void WrenFinalizerFn(IntPtr data);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     internal delegate IntPtr WrenBindForeignMethodFn(IntPtr vm,
         [MarshalAs(UnmanagedType.LPStr)] string module,
         [MarshalAs(UnmanagedType.LPStr)] string className,
         bool isStatic,
         [MarshalAs(UnmanagedType.LPStr)] string signature);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+    internal delegate WrenForeignClassMethods WrenBindForeignClassFn(IntPtr vm,
+        [MarshalAs(UnmanagedType.LPStr)] string module,
+        [MarshalAs(UnmanagedType.LPStr)] string className);
     internal delegate void WrenWriteFn(IntPtr vm, [MarshalAs(UnmanagedType.LPStr)] string text);
     internal delegate void WrenErrorFn(IntPtr vm, ErrorType type,
         [MarshalAs(UnmanagedType.LPStr)] string module,
         int line,
         [MarshalAs(UnmanagedType.LPStr)] string message);
+
+    [StructLayout(LayoutKind.Sequential)]
+    internal struct WrenForeignClassMethods
+    {
+        WrenForeignMethodFn allocate;
+        WrenFinalizerFn finalize;
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     internal struct Configuration
@@ -86,7 +99,7 @@ namespace Wren.Internal
         /// module and name when the class body is executed. It should return the
         /// foreign functions uses to allocate and (optionally) finalize the bytes
         /// stored in the foreign object when an instance is created.
-        public IntPtr bindForeignClassFn; //   WrenBindForeignClassFn
+        public WrenBindForeignClassFn bindForeignClassFn;
 
         [MarshalAs(UnmanagedType.FunctionPtr)]
         /// The callback Wren uses to display text when `System.print()` or the other
