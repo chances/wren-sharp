@@ -325,8 +325,6 @@ namespace Wren
 
         private void OnError(ErrorType type, string module, int line, string message)
         {
-            // TODO: Handle stack trace errors http://wren.io/embedding/configuring-the-vm.html#errorfn
-
             if (Error != null)
             {
                 var args = new ErrorEventArgs(type, module, line, message);
@@ -335,7 +333,14 @@ namespace Wren
 
             if (_config.RaiseExceptionOnError)
             {
-                _lastError = new WrenException(type, module, line, message);
+                if (type == ErrorType.WREN_ERROR_STACK_TRACE)
+                {
+                    _lastError.AddStackFrame(new StackFrame(type, module, line, message));
+                }
+                else
+                {
+                    _lastError = new WrenException(type, module, line, message);
+                }
             }
         }
 
