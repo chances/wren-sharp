@@ -168,6 +168,8 @@ class DoMath {
             vm.Interpret("io", @"var file = File.create(""/tmp/wren.txt"") 
 file.write(""some text"") 
 file.close()");
+
+            vm.Dispose();
         }
     }
 }
