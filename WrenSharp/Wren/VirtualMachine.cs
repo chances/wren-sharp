@@ -238,10 +238,7 @@ namespace Wren
 
         private void WireCallbacks(ref Internal.Configuration config)
         {
-            if (_config.BindForeignClass != null)
-            {
-                config.bindForeignClassFn = OnBindForeignClass;
-            }
+            config.bindForeignClassFn = OnBindForeignClass;
 
             if (_config.BindForeignMethod != null)
             {
@@ -267,7 +264,11 @@ namespace Wren
 
         private Internal.WrenForeignClassMethods OnBindForeignClass(IntPtr vm, string module, string className)
         {
-            var foreignClass = _config.BindForeignClass(this, module, className);
+            Nullable<ForeignClass> foreignClass = null;
+            if (_config.BindForeignClass != null)
+            {
+                foreignClass = _config.BindForeignClass(this, module, className);
+            }
             var handler = _nullClassHandler;
             if (foreignClass.HasValue)
             {

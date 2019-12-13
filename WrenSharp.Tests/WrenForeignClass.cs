@@ -9,6 +9,38 @@ namespace WrenSharp.Tests
     public class WrenForeignClass
     {
         [Fact]
+        public void WrenBindNullForeignClass()
+        {
+            var vm = new VirtualMachine(new Configuration
+            {
+                RaiseExceptionOnError = true,
+                BindForeignMethod = (_, module, className, isStatic, signature) =>
+                {
+                    if (module == "io" && className == "File" && !isStatic && signature == "close()")
+                    {
+                        return (vm) =>
+                        {
+                            var file = vm.GetSlotForeign(0);
+                            Assert.True(file == null, "Foreign object is null");
+                        };
+                    }
+
+                    return null;
+                }
+            });
+
+            vm.Interpret("io", @"foreign class File {
+  construct create(path) {}
+
+  foreign close()
+}");
+            vm.Interpret("io", "var file = File.create(\"/tmp/foo\")");
+            vm.Interpret("io", "file.close()");
+
+            vm.Dispose();
+        }
+
+        [Fact]
         public void WrenBindForeignClass()
         {
             var vm = InitVmWithFileClass("io");
