@@ -6,96 +6,48 @@ using Xunit;
 
 namespace WrenSharp.Tests
 {
-    // http://wren.io/embedding/calling-c-from-wren.html
-    public class WrenForeign
+    public class WrenForeignClass
     {
-        private BindForeignMethodFn foreignMethodBinder = (_, module, className, isStatic, signature) =>
-        {
-            if (module == "math" && className == "BindMath" && isStatic && signature == "add(_,_)")
-            {
-                ForeignMethodFn bindMathAdd = (vm) =>
-                {
-                    var a = vm.GetSlotDouble(1);
-                    var b = vm.GetSlotDouble(2);
-                    vm.SetSlotDouble(0, a + b);
-                };
-                return bindMathAdd;
-            }
-
-            return null; // Return a no-op for unmatched foreign methods
-        };
-
-        [Fact]
-        public void WrenBindForeignMethodNoOp()
-        {
-            var vm = new VirtualMachine(new Configuration
-            {
-                RaiseExceptionOnError = true,
-                BindForeignMethod = foreignMethodBinder
-            });
-
-            vm.Interpret("math", @"class BindMath {
-  foreign static sum(a, b) 
-}
-
-var foreignSum = 0.0
-
-class DoMath {
-  static sum() {
-    return BindMath.sum(" + 1.5 + "," + 3 + @")
-  }
-}");
-
-            vm.Interpret("math", "foreignSum = DoMath.sum()");
-
-            vm.EnsureSlots(1);
-            vm.GetVariable("math", "foreignSum", 0);
-            Assert.True(vm.GetSlotType(0) == Wren.ValueType.WREN_TYPE_UNKNOWN, "Sum method return value is unknown");
-        }
-
-        [Fact]
-        public void WrenBindForeignMethod()
-        {
-            var a = 4.5d;
-            var b = 8d;
-            var expectedSum = a + b;
-
-            var vm = new VirtualMachine(new Configuration
-            {
-                RaiseExceptionOnError = true,
-                BindForeignMethod = foreignMethodBinder
-            });
-
-            vm.Interpret("math", @"class BindMath {
-  foreign static add(a, b) 
-}
-
-var foreignSum = 0.0
-
-class DoMath {
-  static sum() {
-    return BindMath.add(" + a + "," + b + @")
-  }
-}");
-
-            vm.Interpret("math", "foreignSum = DoMath.sum()");
-
-            vm.EnsureSlots(1);
-            vm.GetVariable("math", "foreignSum", 0);
-            var slotType = vm.GetSlotType(0);
-            Assert.True(slotType == Wren.ValueType.WREN_TYPE_NUM, "Sum method return value is a number");
-            Assert.True(vm.GetSlotDouble(0) == expectedSum, "Sum method return value matches expected sum");
-        }
-
         [Fact]
         public void WrenBindForeignClass()
+        {
+            var vm = InitVmWithFileClass("io");
+
+            vm.Interpret("io", @"var file = File.create(""/tmp/wren.txt"")
+file.write(""some text"") 
+file.close()");
+            // Test passes if code runs without error
+
+            vm.Dispose();
+        }
+
+        [Fact]
+        public void WrenBindForeignClassAbortFiber()
+        {
+            var vm = InitVmWithFileClass("io");
+
+            var runtimeError = Assert.Throws<WrenException>(() =>
+            {
+                vm.Interpret("io", @"var file = File.create(""/tmp/wren.txt"") 
+file.close()
+file.write(""some text"")");
+            });
+            Assert.True(runtimeError.Type == ErrorType.WREN_ERROR_RUNTIME, "Runtime error write after close");
+            Assert.StartsWith(runtimeError.Message, "Cannot write to a closed file.");
+            Assert.True(runtimeError.WrenStackTrace.Count > 1, "Runtime error has stack trace");
+            Assert.True(runtimeError.WrenStackTrace[1].Line == 3, "Trace error to line 3 of script");
+
+            vm.Dispose();
+        }
+
+        private VirtualMachine InitVmWithFileClass(string classModule)
         {
             var vm = new VirtualMachine(new Configuration
             {
                 RaiseExceptionOnError = true,
                 BindForeignClass = (_, module, className) =>
                 {
-                    if (module == "io" && className == "File")
+                    if (module == classModule && className == "File")
                     {
                         return new ForeignClass
                         {
@@ -122,7 +74,7 @@ class DoMath {
                 },
                 BindForeignMethod = (_, module, className, isStatic, signature) =>
                 {
-                    if (module == "io" && className == "File" && !isStatic && signature == "write(_)")
+                    if (module == classModule && className == "File" && !isStatic && signature == "write(_)")
                     {
                         return (vm) =>
                         {
@@ -140,7 +92,7 @@ class DoMath {
                         };
                     }
 
-                    if (module == "io" && className == "File" && !isStatic && signature == "close()")
+                    if (module == classModule && className == "File" && !isStatic && signature == "close()")
                     {
                         return (vm) =>
                         {
@@ -158,18 +110,13 @@ class DoMath {
                 }
             });
 
-            vm.Interpret("io", @"foreign class File { 
+            vm.Interpret(classModule, @"foreign class File { 
   construct create(path) {}
 
   foreign write(text) 
   foreign close() 
 }");
-            //Then
-            vm.Interpret("io", @"var file = File.create(""/tmp/wren.txt"") 
-file.write(""some text"") 
-file.close()");
-
-            vm.Dispose();
+            return vm;
         }
     }
 }
