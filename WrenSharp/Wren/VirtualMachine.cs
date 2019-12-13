@@ -21,7 +21,7 @@ namespace Wren
         };
         private HashSet<Internal.WrenForeignMethodFn> _foreignMethods = new HashSet<Internal.WrenForeignMethodFn>();
         private readonly Internal.WrenForeignMethodFn _nullMethodHandler = (_) => {};
-        private HashSet<GCHandle> _foreignObjects = new HashSet<GCHandle>();
+        private List<object> _foreignObjects = new List<object>();
 
         public VirtualMachine(Configuration config = null)
         {
@@ -224,14 +224,16 @@ namespace Wren
         internal object MarshalForeign(IntPtr foreignPtr)
         {
             var foreignObjectPtr = Marshal.ReadIntPtr(foreignPtr);
-            if (foreignObjectPtr.ToInt64() == IntPtr.Zero.ToInt64())
+            var objectIndex = foreignObjectPtr.ToInt32();
+            var isNullPointer = objectIndex <= 0;
+            var isOutOfBounds = objectIndex > 0 && objectIndex < _foreignObjects.Count;
+            if (isNullPointer || isOutOfBounds)
             {
                 return null;
             }
-            var foreignObjectHandle = GCHandle.FromIntPtr(foreignObjectPtr);
-            var foreignObject = foreignObjectHandle.Target;
-            foreignObjectHandle.Free();
-            return foreignObject;
+
+            object obj = _foreignObjects[objectIndex - 1];
+            return obj;
         }
 
         private void WireCallbacks(ref Internal.Configuration config)
@@ -257,9 +259,8 @@ namespace Wren
             if (foreignObject != null)
             {
                 // Keep a handle on the object to prevent GC of it
-                var foreignObjectHandle = GCHandle.Alloc(foreignObject);
-                _foreignObjects.Add(foreignObjectHandle);
-                foreignObjectPtr = GCHandle.ToIntPtr(foreignObjectHandle);
+                _foreignObjects.Add(foreignObject);
+                foreignObjectPtr = IntPtr.Add(IntPtr.Zero, 1 + _foreignObjects.LastIndexOf(foreignObject));
             }
             Marshal.WriteIntPtr(foreignPtr, foreignObjectPtr);
         }
@@ -347,11 +348,6 @@ namespace Wren
             {
                 if (disposing)
                 {
-                    foreach (var foreignObject in _foreignObjects)
-                    {
-                        foreignObject.Free();
-                    }
-
                     _foreignMethods.Clear();
                     _foreignObjects.Clear();
                 }
