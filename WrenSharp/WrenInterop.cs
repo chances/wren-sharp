@@ -15,6 +15,11 @@ namespace Wren
         {
         }
 
+        public WrenVmSafeHandle(IntPtr handle) : base(ownsHandle: true)
+        {
+            SetHandle(handle);
+        }
+
         [ReliabilityContract(Consistency.WillNotCorruptState, Cer.MayFail)]
         protected override bool ReleaseHandle()
         {

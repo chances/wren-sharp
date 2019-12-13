@@ -5,8 +5,14 @@ namespace Wren
     public delegate void ForeignMethodFn(VirtualMachine vm);
     public delegate ForeignMethodFn BindForeignMethodFn(VirtualMachine vm,
         string module, string className, bool isStatic, string signature);
-    public delegate ForeignObject BindForeignClassFn(VirtualMachine vm,
+    public delegate Nullable<ForeignClass> BindForeignClassFn(VirtualMachine vm,
         string module, string className);
+
+    public struct ForeignClass
+    {
+        public Func<VirtualMachine, object> Allocate;
+        public Action<object> Finalize;
+    }
 
     public abstract class ForeignObject : IDisposable
     {
@@ -22,6 +28,9 @@ namespace Wren
         /// </summary>
         public BindForeignMethodFn BindForeignMethod { get; set; } = null;
 
+        /// <summary>
+        /// Callback function invoked when the Wren VM encounters a foreign class declaration.
+        /// </summary>
         public BindForeignClassFn BindForeignClass { get; set; } = null;
 
         /// <summary>

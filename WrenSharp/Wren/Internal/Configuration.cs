@@ -26,8 +26,8 @@ namespace Wren.Internal
     [StructLayout(LayoutKind.Sequential)]
     internal struct WrenForeignClassMethods
     {
-        WrenForeignMethodFn allocate;
-        WrenFinalizerFn finalize;
+        public WrenForeignMethodFn allocate;
+        public WrenFinalizerFn finalize;
     }
 
     [StructLayout(LayoutKind.Sequential)]

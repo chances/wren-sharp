@@ -12,8 +12,15 @@ namespace Wren
         private WrenException _lastError = null;
 
         internal WrenVmSafeHandle Handle => _handle;
+        private readonly Internal.WrenForeignClassMethods _nullClassHandler = new Internal.WrenForeignClassMethods
+        {
+            allocate = (vm) => {
+                WrenInterop.wrenSetSlotNewForeign(new WrenVmSafeHandle(vm), 0, 0, (uint) IntPtr.Size);
+            },
+            finalize = (_) => {}
+        };
         private HashSet<Internal.WrenForeignMethodFn> _foreignMethods = new HashSet<Internal.WrenForeignMethodFn>();
-        private readonly Internal.WrenForeignMethodFn _nullHandler = (_) => {};
+        private readonly Internal.WrenForeignMethodFn _nullMethodHandler = (_) => {};
         private HashSet<GCHandle> _foreignObjects = new HashSet<GCHandle>();
 
         public VirtualMachine(Configuration config = null)
@@ -110,15 +117,7 @@ namespace Wren
         public object GetSlotForeign(int slot)
         {
             var foreignPtr = WrenInterop.wrenGetSlotForeign(_handle, slot);
-            var foreignObjectPtr = Marshal.ReadIntPtr(foreignPtr);
-            if (foreignObjectPtr.ToInt64() == IntPtr.Zero.ToInt64())
-            {
-                return null;
-            }
-            var foreignObjectHandle = GCHandle.FromIntPtr(foreignObjectPtr);
-            var foreignObject = foreignObjectHandle.Target;
-            foreignObjectHandle.Free();
-            return foreignObject;
+            return MarshalForeign(foreignPtr);
         }
 
         public string GetSlotString(int slot)
@@ -222,8 +221,26 @@ namespace Wren
             WrenInterop.wrenAbortFiber(_handle, slot);
         }
 
+        internal object MarshalForeign(IntPtr foreignPtr)
+        {
+            var foreignObjectPtr = Marshal.ReadIntPtr(foreignPtr);
+            if (foreignObjectPtr.ToInt64() == IntPtr.Zero.ToInt64())
+            {
+                return null;
+            }
+            var foreignObjectHandle = GCHandle.FromIntPtr(foreignObjectPtr);
+            var foreignObject = foreignObjectHandle.Target;
+            foreignObjectHandle.Free();
+            return foreignObject;
+        }
+
         private void WireCallbacks(ref Internal.Configuration config)
         {
+            if (_config.BindForeignClass != null)
+            {
+                config.bindForeignClassFn = OnBindForeignClass;
+            }
+
             if (_config.BindForeignMethod != null)
             {
                 config.bindForeignMethodFn = OnBindForeignMethod;
@@ -231,7 +248,7 @@ namespace Wren
 
             config.writeFn = (_, text) => OnWrite(text);
             config.errorFn = (_, type, module, line, message) => OnError(type, module, line, message);
-            // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn, bindForeignClassFn)
+            // TODO: Use events for the rest of config's callbacks (resolveModuleFn, loadModuleFn)
         }
 
         private void SetForeignObject(IntPtr foreignPtr, object foreignObject)
@@ -247,10 +264,30 @@ namespace Wren
             Marshal.WriteIntPtr(foreignPtr, foreignObjectPtr);
         }
 
+        private Internal.WrenForeignClassMethods OnBindForeignClass(IntPtr vm, string module, string className)
+        {
+            var foreignClass = _config.BindForeignClass(this, module, className);
+            var handler = _nullClassHandler;
+            if (foreignClass.HasValue)
+            {
+                var foreign = foreignClass.Value;
+                handler = new Internal.WrenForeignClassMethods
+                {
+                    allocate = (_) => SetSlotNewForeign(0, 0, foreign.Allocate(this)),
+                    finalize = (foreignPtr) =>
+                    {
+                        foreign.Finalize(MarshalForeign(foreignPtr));
+                    }
+                };
+            }
+
+            return handler;
+        }
+
         private IntPtr OnBindForeignMethod(IntPtr vm, string module, string className, bool isStatic, string signature)
         {
             var foreignMethod = _config.BindForeignMethod(this, module, className, isStatic, signature);
-            var handler = _nullHandler;
+            var handler = _nullMethodHandler;
             if (foreignMethod != null)
             {
                 handler = (_) =>
@@ -260,7 +297,7 @@ namespace Wren
             }
 
             // Ensure handles to foreign methods are kept reachable
-            if (handler != _nullHandler && !_foreignMethods.Contains(handler))
+            if (handler != _nullMethodHandler && !_foreignMethods.Contains(handler))
             {
                 _foreignMethods.Add(handler);
             }
