@@ -1,5 +1,4 @@
-﻿using System.Text;
-using Wren;
+﻿using Wren;
 using Xunit;
 
 namespace WrenSharp.Tests
