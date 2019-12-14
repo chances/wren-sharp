@@ -55,11 +55,6 @@ namespace Wren
         public BindForeignClassFn BindForeignClass { get; set; } = null;
 
         /// <summary>
-        /// Whether the WrenWriteFn handler shall also write to System.Console
-        /// </summary>
-        public bool WriteToConsole { get; set; } = false;
-
-        /// <summary>
         /// Whether the WrenErrorFn handler shall also raise a WrenException
         /// </summary>
         public bool RaiseExceptionOnError { get; set; } = false;

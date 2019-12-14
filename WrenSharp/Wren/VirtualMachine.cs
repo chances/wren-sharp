@@ -311,18 +311,9 @@ namespace Wren
 
         private void OnWrite(string text)
         {
-            var wasHandled = false;
-
             if (Write != null)
             {
-                var args = new WriteEventArgs(text);
-                Write(this, args);
-                wasHandled = args.Handled;
-            }
-
-            if (!wasHandled && _config.WriteToConsole)
-            {
-                System.Console.Write(text);
+                Write(this, new WriteEventArgs(text));
             }
         }
 

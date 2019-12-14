@@ -12,11 +12,5 @@ namespace Wren
         }
 
         public string Text { get; private set; }
-        public bool Handled { get; private set; }
-
-        public void SetHandled()
-        {
-            Handled = true;
-        }
     }
 }
