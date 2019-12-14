@@ -9,7 +9,7 @@ namespace WrenSharp.Tests
     public class WrenForeignClass
     {
         [Fact]
-        public void WrenBindNullForeignClass()
+        public void WrenBindUnknownForeignClass()
         {
             var vm = new VirtualMachine(new Configuration
             {

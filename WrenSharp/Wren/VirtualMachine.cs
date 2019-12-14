@@ -12,13 +12,7 @@ namespace Wren
         private WrenException _lastError = null;
 
         internal WrenVmSafeHandle Handle => _handle;
-        private readonly Internal.WrenForeignClassMethods _nullClassHandler = new Internal.WrenForeignClassMethods
-        {
-            allocate = (vm) => {
-                WrenInterop.wrenSetSlotNewForeign(new WrenVmSafeHandle(vm), 0, 0, (uint) IntPtr.Size);
-            },
-            finalize = (_) => {}
-        };
+        private const int NULL_FOREIGN_OBJECT_INDEX = -1;
         private HashSet<Internal.WrenForeignMethodFn> _foreignMethods = new HashSet<Internal.WrenForeignMethodFn>();
         private readonly Internal.WrenForeignMethodFn _nullMethodHandler = (_) => {};
         private List<object> _foreignObjects = new List<object>();
@@ -172,7 +166,8 @@ namespace Wren
         /// <remarks>The raw storage size is fixed because WrenSharp manages foreign data as pointers to CLR objects.</returns>
         public void SetSlotNewForeign(int slot, int classSlot, object foreignObject = null)
         {
-            var foreignPtr = WrenInterop.wrenSetSlotNewForeign(_handle, slot, classSlot, (uint) IntPtr.Size);
+            var foreignPtr = WrenInterop.wrenSetSlotNewForeign(_handle, slot, classSlot,
+                (uint) Marshal.SizeOf<int>());
             SetForeignObject(foreignPtr, foreignObject);
         }
 
@@ -223,16 +218,15 @@ namespace Wren
 
         internal object MarshalForeign(IntPtr foreignPtr)
         {
-            var foreignObjectPtr = Marshal.ReadIntPtr(foreignPtr);
-            var objectIndex = foreignObjectPtr.ToInt32();
-            var isNullPointer = objectIndex <= 0;
-            var isOutOfBounds = objectIndex > 0 && objectIndex < _foreignObjects.Count;
-            if (isNullPointer || isOutOfBounds)
+            var objectIndex = Marshal.ReadInt32(foreignPtr);
+
+            // Index into the foreign objects list
+            var isOutOfBounds = objectIndex < 0 || objectIndex < _foreignObjects.Count - 1;
+            if (isOutOfBounds)
             {
                 return null;
             }
-
-            object obj = _foreignObjects[objectIndex - 1];
+            object obj = _foreignObjects[objectIndex];
             return obj;
         }
 
@@ -252,14 +246,13 @@ namespace Wren
 
         private void SetForeignObject(IntPtr foreignPtr, object foreignObject)
         {
-            var foreignObjectPtr = IntPtr.Zero;
+            var foreignObjectIndex = NULL_FOREIGN_OBJECT_INDEX;
             if (foreignObject != null)
             {
-                // Keep a handle on the object to prevent GC of it
                 _foreignObjects.Add(foreignObject);
-                foreignObjectPtr = IntPtr.Add(IntPtr.Zero, 1 + _foreignObjects.LastIndexOf(foreignObject));
+                foreignObjectIndex = _foreignObjects.LastIndexOf(foreignObject);
             }
-            Marshal.WriteIntPtr(foreignPtr, foreignObjectPtr);
+            Marshal.WriteInt32(foreignPtr, foreignObjectIndex);
         }
 
         private Internal.WrenForeignClassMethods OnBindForeignClass(IntPtr vm, string module, string className)
@@ -269,11 +262,10 @@ namespace Wren
             {
                 foreignClass = _config.BindForeignClass(this, module, className);
             }
-            var handler = _nullClassHandler;
             if (foreignClass.HasValue)
             {
                 var foreign = foreignClass.Value;
-                handler = new Internal.WrenForeignClassMethods
+                return new Internal.WrenForeignClassMethods
                 {
                     allocate = (_) => SetSlotNewForeign(0, 0, foreign.Allocate(this)),
                     finalize = (foreignPtr) =>
@@ -283,7 +275,17 @@ namespace Wren
                 };
             }
 
-            return handler;
+            // Unknown class
+            return new Internal.WrenForeignClassMethods
+            {
+                allocate = (_) =>
+                {
+                    var foreignPtr = WrenInterop.wrenSetSlotNewForeign(_handle, 0, 0,
+                        (uint) Marshal.SizeOf<int>());
+                    Marshal.WriteInt32(foreignPtr, NULL_FOREIGN_OBJECT_INDEX);
+                },
+                finalize = null
+            };
         }
 
         private IntPtr OnBindForeignMethod(IntPtr vm, string module, string className, bool isStatic, string signature)
@@ -354,11 +356,15 @@ namespace Wren
             {
                 if (disposing)
                 {
-                    _foreignMethods.Clear();
                     _foreignObjects.Clear();
                 }
 
                 _handle.Dispose();
+
+                if (disposing)
+                {
+                    _foreignMethods.Clear();
+                }
 
                 disposedValue = true;
             }
