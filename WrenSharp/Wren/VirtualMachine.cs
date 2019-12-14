@@ -16,6 +16,12 @@ namespace Wren
         private HashSet<Internal.WrenForeignMethodFn> _foreignMethods = new HashSet<Internal.WrenForeignMethodFn>();
         private readonly Internal.WrenForeignMethodFn _nullMethodHandler = (_) => {};
         private List<object> _foreignObjects = new List<object>();
+        private Dictionary<(string, string), ForeignClass> _foreignClasses =
+            new Dictionary<(string, string), ForeignClass>();
+        private List<Internal.WrenForeignClassMethods> _foreignClassAllocatorsAndFinalizers =
+            new List<Internal.WrenForeignClassMethods>();
+        private Dictionary<(string, string), Dictionary<(bool, string), ForeignMethodFn>> _foreignClassMethods =
+            new Dictionary<(string, string), Dictionary<(bool, string), ForeignMethodFn>>();
 
         public VirtualMachine(Configuration config = null)
         {
@@ -191,6 +197,38 @@ namespace Wren
             WrenInterop.wrenSetSlotHandle(_handle, slot, handle.RawHandle);
         }
 
+        public void SetSlot(int slot, object value)
+        {
+            if (value == null)
+            {
+                SetSlotNull(slot);
+            }
+            else if (value is bool boolValue)
+            {
+                SetSlotBool(slot, boolValue);
+            }
+            else if (value is int intValue)
+            {
+                SetSlotDouble(slot, intValue);
+            }
+            else if (value is double doubleValue)
+            {
+                SetSlotDouble(slot, doubleValue);
+            }
+            else if (value is string stringValue)
+            {
+                SetSlotString(slot, stringValue);
+            }
+            else if (value is Handle handle)
+            {
+                SetSlotHandle(slot, handle);
+            }
+            else
+            {
+                throw new ArgumentException("Bad value type for slot", nameof(value));
+            }
+        }
+
         public int GetListCount(int slot)
         {
             return WrenInterop.wrenGetListCount(_handle, slot);
@@ -216,6 +254,24 @@ namespace Wren
             WrenInterop.wrenAbortFiber(_handle, slot);
         }
 
+        public void BindForeign<T>(string module) where T : ForeignObject
+        {
+            var foreignClass = new ForeignClass
+            {
+                Allocate = (_) => ForeignObject.Allocate<T>(this),
+                Finalize = (objectToFinalize) =>
+                {
+                    if (objectToFinalize is ForeignObject foreignObject)
+                    {
+                        foreignObject.Dispose();
+                    }
+                }
+            };
+            string className = typeof(T).Name;
+            _foreignClasses.Add((module, className), foreignClass);
+            _foreignClassMethods.Add((module, className), ForeignObject.Methods<T>());
+        }
+
         internal object MarshalForeign(IntPtr foreignPtr)
         {
             var objectIndex = Marshal.ReadInt32(foreignPtr);
@@ -233,11 +289,7 @@ namespace Wren
         private void WireCallbacks(ref Internal.Configuration config)
         {
             config.bindForeignClassFn = OnBindForeignClass;
-
-            if (_config.BindForeignMethod != null)
-            {
-                config.bindForeignMethodFn = OnBindForeignMethod;
-            }
+            config.bindForeignMethodFn = OnBindForeignMethod;
 
             config.writeFn = (_, text) => OnWrite(text);
             config.errorFn = (_, type, module, line, message) => OnError(type, module, line, message);
@@ -262,21 +314,14 @@ namespace Wren
             {
                 foreignClass = _config.BindForeignClass(this, module, className);
             }
-            if (foreignClass.HasValue)
+            // Try to bind to a C# class
+            if (!foreignClass.HasValue && _foreignClasses.ContainsKey((module, className)))
             {
-                var foreign = foreignClass.Value;
-                return new Internal.WrenForeignClassMethods
-                {
-                    allocate = (_) => SetSlotNewForeign(0, 0, foreign.Allocate(this)),
-                    finalize = (foreignPtr) =>
-                    {
-                        foreign.Finalize(MarshalForeign(foreignPtr));
-                    }
-                };
+                foreignClass = _foreignClasses[(module, className)];
             }
 
-            // Unknown class
-            return new Internal.WrenForeignClassMethods
+            // Unknown class default
+            var allocatorAndFinalizer = new Internal.WrenForeignClassMethods
             {
                 allocate = (_) =>
                 {
@@ -286,11 +331,40 @@ namespace Wren
                 },
                 finalize = null
             };
+
+            if (foreignClass.HasValue)
+            {
+                var foreign = foreignClass.Value;
+                allocatorAndFinalizer = new Internal.WrenForeignClassMethods
+                {
+                    allocate = (_) => SetSlotNewForeign(0, 0, foreign.Allocate(this)),
+                    finalize = (foreignPtr) =>
+                    {
+                        foreign.Finalize(MarshalForeign(foreignPtr));
+                    }
+                };
+            }
+
+            // Keep a handle on allocators and finalizers for VM's lifetime
+            _foreignClassAllocatorsAndFinalizers.Add(allocatorAndFinalizer);
+
+            return allocatorAndFinalizer;
         }
 
         private IntPtr OnBindForeignMethod(IntPtr vm, string module, string className, bool isStatic, string signature)
         {
-            var foreignMethod = _config.BindForeignMethod(this, module, className, isStatic, signature);
+            ForeignMethodFn foreignMethod = null;
+            if (_config.BindForeignMethod != null) foreignMethod =
+                _config.BindForeignMethod(this, module, className, isStatic, signature);
+            // Try to bind to a C# class method
+            if (foreignMethod == null && _foreignClassMethods.ContainsKey((module, className)))
+            {
+                var methods = _foreignClassMethods[(module, className)];
+                if (methods.ContainsKey((isStatic, signature))) foreignMethod =
+                    methods[(isStatic, signature)];
+            }
+
+            // Create delegate given to Wren VM
             var handler = _nullMethodHandler;
             if (foreignMethod != null)
             {
@@ -345,16 +419,15 @@ namespace Wren
         {
             if (!disposedValue)
             {
-                if (disposing)
-                {
-                    _foreignObjects.Clear();
-                }
-
                 _handle.Dispose();
 
                 if (disposing)
                 {
+                    _foreignObjects.Clear();
                     _foreignMethods.Clear();
+                    _foreignClasses.Clear();
+                    _foreignClassMethods.Clear();
+                    _foreignClassAllocatorsAndFinalizers.Clear();
                 }
 
                 disposedValue = true;

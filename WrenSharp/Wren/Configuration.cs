@@ -14,34 +14,6 @@ namespace Wren
         public Action<object> Finalize;
     }
 
-    public abstract class ForeignObject : IDisposable
-    {
-        internal ForeignClass ForeignClass { get; private set; }
-
-        public ForeignObject()
-        {
-            ForeignClass = new ForeignClass
-            {
-                Allocate = (vm) =>
-                {
-                    this.Allocate(vm);
-                    return this;
-                },
-                Finalize = (objectToFinalize) =>
-                {
-                    if (objectToFinalize is IDisposable objectToDispose)
-                    {
-                        objectToDispose.Dispose();
-                    }
-                }
-            };
-        }
-
-        public abstract void Allocate(VirtualMachine vm); // TODO: Do this with fancy reflection on implementor's constructors
-
-        public void Dispose() {}
-    }
-
     public class Configuration
     {
         /// <summary>

@@ -89,7 +89,7 @@ file.write(""some text"")");
                                 {
                                     throw new ArgumentException();
                                 }
-                                var file = File.Open(vm.GetSlotString(1), FileMode.OpenOrCreate, FileAccess.ReadWrite);
+                                var file = System.IO.File.Open(vm.GetSlotString(1), FileMode.OpenOrCreate, FileAccess.ReadWrite);
                                 return file;
                             },
                             Finalize = (file) =>
