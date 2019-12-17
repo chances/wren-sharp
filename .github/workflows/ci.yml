@@ -30,16 +30,17 @@ jobs:
       if: success()
       run: |
         dotnet test WrenSharp.Tests/WrenSharp.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat="lcov" /p:CoverletOutput="coverage/" /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary
+    - name: Upload Code Coverage
+      if: matrix.os == 'ubuntu-latest' # Only upload coverage data once
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
     - name: Upload Wren Shared Library Artifact
       if: success()
       uses: actions/upload-artifact@v1
       with:
         name: wren-lib-${{ matrix.os }}
         path: ${{ matrix.wren-lib }}
-    - name: Upload Code Coverage
-      uses: codecov/codecov-action@v1
-      with:
-        token: ${{ secrets.CODECOV_TOKEN }}
 
   package:
     needs: build
