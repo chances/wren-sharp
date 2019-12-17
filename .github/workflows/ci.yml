@@ -11,7 +11,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v1
-    - name: Use .NET Core 3.0
+    - name: Use .NET Core 3.1
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.100' # .NET Core v3.1.0, SDK 3.1.100
