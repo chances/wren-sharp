@@ -44,7 +44,7 @@ jobs:
 
   package:
     needs: build
-    # if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
 
     runs-on: ubuntu-latest
 
@@ -54,19 +54,18 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.100' # .NET Core v3.1.0, SDK 3.1.100
-        source-url: https://nuget.pkg.github.com/chances/index.json
+        source-url: "https://nuget.pkg.github.com/chances/index.json"
       env:
-        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+        NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - name: Build Solution
       run: dotnet build --configuration Release
     - name: Download Wren Shared Library Artifact (mac OS)
       uses: actions/download-artifact@v1
       with:
         name: wren-lib-macos-latest
-        path: 'wren/lib/libwren.dylib'
-    - run: ls -alh "wren/lib"
+        path: 'wren/lib'
     # TODO: Artifact other linuxes somehow (e.g. linux-arm, linux-arm64, etc. see libuv NuGet pkg)
     - name: Create NuGet Package
       run: dotnet pack --configuration Release
     - name: Publish NuGet Package to GPR
-      run: dotnet nuget push WrenSharp/bin/Release/*.nupkg
+      run: dotnet nuget push WrenSharp/bin/Release/*.nupkg # TODO: Fix this, setup-dotnet doesn't create the NuGet.config for some reason, ugh
