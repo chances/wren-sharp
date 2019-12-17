@@ -44,7 +44,7 @@ jobs:
 
   package:
     needs: build
-    if: github.ref == 'refs/heads/master'
+    # if: github.ref == 'refs/heads/master'
 
     runs-on: ubuntu-latest
 
@@ -67,5 +67,22 @@ jobs:
     # TODO: Artifact other linuxes somehow (e.g. linux-arm, linux-arm64, etc. see libuv NuGet pkg)
     - name: Create NuGet Package
       run: dotnet pack --configuration Release
+    - name: Authenticate with NuGet GPR
+      shell: bash
+      run: |
+        echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>\
+<configuration>\
+  <packageSources>\
+    <clear />\
+    <add key=\"GitHub\" value=\"https://nuget.pkg.github.com/chances/index.json\" />\
+  </packageSources>\
+  <packageSourceCredentials>\
+    <GitHub>\
+      <add key=\"Username\" value=\"chances\" />\
+      <add key=\"ClearTextPassword\" value=\"${{ secrets.GITHUB_TOKEN }}\" />\
+    </GitHub>\
+  </packageSourceCredentials>\
+</configuration>" > ../nuget.config
+        cat ../nuget.config
     - name: Publish NuGet Package to GPR
-      run: dotnet nuget push WrenSharp/bin/Release/*.nupkg # TODO: Fix this, setup-dotnet doesn't create the NuGet.config for some reason, ugh
+      run: dotnet nuget push WrenSharp/bin/Release/*.nupkg --source GitHub # TODO: Fix this, setup-dotnet doesn't create the NuGet.config for some reason, ugh
