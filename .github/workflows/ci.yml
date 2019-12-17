@@ -11,7 +11,11 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest] # TODO: Integrate CI for windows-latest
-        wren-lib: ['wren/lib/libwren.so', 'wren/lib/libwren.dylib']
+        include:
+          - os: ubuntu-latest
+            wren-lib: 'wren/lib/libwren.so'
+          - os: macos-latest
+            wren-lib: 'wren/lib/libwren.dylib'
 
     steps:
     - uses: actions/checkout@v1
