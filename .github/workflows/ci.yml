@@ -39,17 +39,10 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         token: ${{ secrets.CODECOV_TOKEN }}
-    # - name: Publish to GitHub Package Repo
-    #   if: success() && github.ref == 'refs/heads/master'
-    #   run: |
-    #     npx netlify deploy --prod --dir $NETLIFY_DIR --auth $NETLIFY_AUTH_TOKEN --site $NETLIFY_SITE_ID
-    #   env:
-    #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-    #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-    #     NETLIFY_DIR: public
 
   package:
     needs: build
+    # if: github.ref == 'refs/heads/master'
 
     runs-on: ubuntu-latest
 
