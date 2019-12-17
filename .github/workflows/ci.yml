@@ -1,0 +1,39 @@
+name: WrenSharp CI
+
+on: push
+#   schedule:
+#   - cron: '0 0 * * SUN'
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use .NET Core 3.0
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.100' # .NET Core v3.1.0, SDK 3.1.100
+        source-url: https://nuget.pkg.github.com/chances/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Build Solution
+      run: |
+        dotnet build
+    - name: Test
+      if: success()
+      run: |
+        dotnet test WrenSharp.Tests/WrenSharp.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat="lcov,opencover" /p:CoverletOutput="coverage/" /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary
+    - name: Upload Code Coverage
+      uses: codecov/codecov-action@v1
+      with:
+        token: ${{ secrets.CODECOV_TOKEN }}
+    # - name: Publish to GitHub Package Repo
+    #   if: success() && github.ref == 'refs/heads/master'
+    #   run: |
+    #     npx netlify deploy --prod --dir $NETLIFY_DIR --auth $NETLIFY_AUTH_TOKEN --site $NETLIFY_SITE_ID
+    #   env:
+    #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+    #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+    #     NETLIFY_DIR: public
