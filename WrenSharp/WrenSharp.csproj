@@ -4,6 +4,20 @@
     <TargetFramework>netstandard2.0</TargetFramework>
   </PropertyGroup>
 
+  <PropertyGroup>
+    <Title>WrenSharp</Title>
+    <PackageId>WrenSharp</PackageId>
+    <Version>0.1.0</Version>
+    <PackageDescription>A cross-platform scripting API for .NET platforms binding to the Wren scripting language.</PackageDescription>
+    <Authors>Chance Snow</Authors>
+    <Company>Chance Snow</Company>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <Copyright>© Chance Snow. All rights reserved.</Copyright>
+    <PackageTags>scripting;ios;android;linux;windows;uwp;macos;cross-platform;wren</PackageTags>
+    <PackageReleaseNotes>Please visit https://github.com/chances/wren-sharp/releases to view the release notes.</PackageReleaseNotes>
+    <RepositoryUrl>https://github.com/chances/wren-sharp</RepositoryUrl>
+  </PropertyGroup>
+
   <Target Name="InitWrenGitSubmodule" AfterTargets="BeforeBuild">
     <!-- <Exec Command="ls" WorkingDirectory="$(SolutionDir)" Condition="'$(OS)' != 'Windows_NT'" /> -->
     <!-- <Exec Command="dir" WorkingDirectory="$(SolutionDir)" Condition="'$(OS)' == 'Windows_NT'" /> -->
@@ -18,14 +32,23 @@
   <PropertyGroup>
     <IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinux>
     <IsOsx>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</IsOsx>
-    <WrenSharedLibraryPath Condition="$(IsLinux)">$(MSBuildProjectDirectory)/../wren/lib/libwren.so</WrenSharedLibraryPath>
-    <WrenSharedLibraryPath Condition="$(IsOsx)">$(MSBuildProjectDirectory)/../wren/lib/libwren.dylib</WrenSharedLibraryPath>
+    <WrenSharedLibraryPathOsx>$(MSBuildProjectDirectory)/../wren/lib/libwren.dylib</WrenSharedLibraryPathOsx>
+    <WrenSharedLibraryPathLinux>$(MSBuildProjectDirectory)/../wren/lib/libwren.so</WrenSharedLibraryPathLinux>
   </PropertyGroup>
   <Target Name="CopyWrenSharedLibrary" AfterTargets="AfterBuild">
-    <Copy SourceFiles="$(WrenSharedLibraryPath)" DestinationFolder="$(OutDir)" />
+    <Copy SourceFiles="$(WrenSharedLibraryPathOsx)" DestinationFolder="$(OutDir)" Condition="$(IsOsx)" />
+    <Copy SourceFiles="$(WrenSharedLibraryPathLinux)" DestinationFolder="$(OutDir)" Condition="$(IsLinux)" />
   </Target>
-  <Target Name="CopyWrenSharedLibraryOnPublish" AfterTargets="Publish">
-    <Copy SourceFiles="$(WrenSharedLibraryPath)" DestinationFolder="$(PublishDir)" />
-  </Target>
+
+  <ItemGroup>
+    <None Include="$(WrenSharedLibraryPathOsx)" Pack="true" PackageCopyToOutput="true" PackagePath="runtimes/osx/native" />
+    <None Include="$(WrenSharedLibraryPathLinux)" Pack="true" PackageCopyToOutput="true" PackagePath="runtimes/linux-x64/native" />
+    <!-- TODO: Package for windows -->
+    <!-- <file platform="windows" src="runtimes/win-x64/native/libSkiaSharp.dll" /> -->
+    <!-- <file platform="windows" src="runtimes/win-x86/native/libSkiaSharp.dll" /> -->
+    <!-- <file platform="windows" src="runtimes/win10-x64/nativeassets/uap10.0/libSkiaSharp.dll" /> -->
+    <!-- <file platform="windows" src="runtimes/win10-x86/nativeassets/uap10.0/libSkiaSharp.dll" /> -->
+    <!-- <file platform="windows" src="runtimes/win10-arm/nativeassets/uap10.0/libSkiaSharp.dll" /> -->
+  </ItemGroup>
 
 </Project>

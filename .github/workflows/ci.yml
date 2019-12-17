@@ -10,7 +10,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest] # TODO: Integrate CI for windows-latest
+        wren-lib: ['wren/lib/libwren.so', 'wren/lib/libwren.dylib']
 
     steps:
     - uses: actions/checkout@v1
@@ -18,16 +19,18 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.100' # .NET Core v3.1.0, SDK 3.1.100
-        source-url: https://nuget.pkg.github.com/chances/index.json
-      env:
-        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
     - name: Build Solution
-      run: |
-        dotnet build
+      run: dotnet build
     - name: Test
       if: success()
       run: |
         dotnet test WrenSharp.Tests/WrenSharp.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat="lcov" /p:CoverletOutput="coverage/" /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary
+    - name: Upload Wren Shared Library Artifact
+      if: success()
+      uses: actions/upload-artifact@v1
+      with:
+        name: wren-lib-${{ matrix.os }}
+        path: ${{ matrix.wren-lib }}
     - name: Upload Code Coverage
       uses: codecov/codecov-action@v1
       with:
@@ -40,3 +43,35 @@ jobs:
     #     NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
     #     NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
     #     NETLIFY_DIR: public
+
+  package:
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v1
+    - name: Use .NET Core 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: '3.1.100' # .NET Core v3.1.0, SDK 3.1.100
+        source-url: https://nuget.pkg.github.com/chances/index.json
+      env:
+        NUGET_AUTH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+    - name: Build Solution
+      run: dotnet build --configuration Release
+    - name: Download Wren Shared Library Artifact (mac OS)
+      uses: actions/download-artifact@v1
+      with:
+        name: wren-lib-macos-latest
+        path: 'wren/lib/libwren.dylib'
+    # TODO: Artifact other linuxes somehow (e.g. linux-arm, linux-arm64, etc. see libuv NuGet pkg)
+    # - name: Download Wren Shared Library Artifact (Linux arm)
+    #   uses: actions/download-artifact@v1
+    #   with:
+    #     name: wren-lib-ubuntu-latest
+    #     path: 'wren/lib/libwren.so'
+    - name: Create NuGet Package
+      run: dotnet pack --configuration Release
+    - name: Publish NuGet Package to GPR
+      run: dotnet nuget push WrenSharp/bin/Release/*.nupkg
