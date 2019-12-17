@@ -1,5 +1,8 @@
 namespace Wren
 {
+    /// <summary>
+    /// Type of error raised by the Wren VM.
+    /// </summary>
     public enum ErrorType
     {
         /// <summary>

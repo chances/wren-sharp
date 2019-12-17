@@ -82,38 +82,14 @@ namespace Wren.Internal
         public IntPtr loadModuleFn; //   WrenLoadModuleFn
 
         [MarshalAs(UnmanagedType.FunctionPtr)]
-        /// The callback Wren uses to find a foreign method and bind it to a class.
-        ///
-        /// When a foreign method is declared in a class, this will be called with the
-        /// foreign method's module, class, and signature when the class body is
-        /// executed. It should return a pointer to the foreign function that will be
-        /// bound to that method.
-        ///
-        /// If the foreign function could not be found, this should return NULL and
-        /// Wren will report it as runtime error.
         public WrenBindForeignMethodFn bindForeignMethodFn;
 
-        /// The callback Wren uses to find a foreign class and get its foreign methods.
-        ///
-        /// When a foreign class is declared, this will be called with the class's
-        /// module and name when the class body is executed. It should return the
-        /// foreign functions uses to allocate and (optionally) finalize the bytes
-        /// stored in the foreign object when an instance is created.
         public WrenBindForeignClassFn bindForeignClassFn;
 
         [MarshalAs(UnmanagedType.FunctionPtr)]
-        /// The callback Wren uses to display text when `System.print()` or the other
-        /// related functions are called.
-        ///
-        /// If this is `NULL`, Wren discards any printed text.
         public WrenWriteFn writeFn;
 
         [MarshalAs(UnmanagedType.FunctionPtr)]
-        /// The callback Wren uses to report errors.
-        ///
-        /// When an error occurs, this will be called with the module name, line
-        /// number, and an error message. If this is `NULL`, Wren doesn't report any
-        /// errors.
         public WrenErrorFn errorFn;
 
         /// The number of bytes Wren will allocate before triggering the first garbage
