@@ -54,9 +54,6 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: '3.1.100' # .NET Core v3.1.0, SDK 3.1.100
-      #   source-url: "https://nuget.pkg.github.com/chances/index.json"
-      # env:
-      #   NUGET_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     - uses: nuget/setup-nuget@v1
       with:
         nuget-version: 'latest'
@@ -74,4 +71,4 @@ jobs:
     - name: Authenticate with NuGet GPR
       run: nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/chances/index.json" -UserName chances -Password ${{ secrets.GITHUB_TOKEN }}
     - name: Publish NuGet Package to GPR
-      run: dotnet nuget push WrenSharp/bin/Release/*.nupkg --source GitHub # TODO: Fix this, setup-dotnet doesn't create the NuGet.config for some reason, ugh
+      run: nuget push WrenSharp/bin/Release/*.nupkg -Source GitHub -verbosity detailed # TODO: Fix this, setup-dotnet doesn't create the NuGet.config for some reason, ugh
