@@ -67,8 +67,15 @@ jobs:
         path: 'wren/lib'
     # TODO: Artifact other linuxes somehow (e.g. linux-arm, linux-arm64, etc. see libuv NuGet pkg)
     - name: Create NuGet Package
-      run: dotnet pack --configuration Release
+      run: dotnet pack --configuration Release --version-suffix prerelease-$(date +%Y%m%d%H%M%S)
     - name: Authenticate with NuGet GPR
       run: nuget source Add -Name "GitHub" -Source "https://nuget.pkg.github.com/chances/index.json" -UserName chances -Password ${{ secrets.GITHUB_TOKEN }}
+    # - name: Publish NuGet Package to GPR
+    #   run: nuget push WrenSharp/bin/Release/*.nupkg -Source GitHub -verbosity detailed # TODO: Fix this, setup-dotnet doesn't create the NuGet.config for some reason, ugh
     - name: Publish NuGet Package to GPR
-      run: nuget push WrenSharp/bin/Release/*.nupkg -Source GitHub -verbosity detailed # TODO: Fix this, setup-dotnet doesn't create the NuGet.config for some reason, ugh
+      shell: bash
+      run: |
+           for f in ./WrenSharp/bin/Release/*.nupkg
+           do
+             curl -vX PUT -u "chances:${{ secrets.GITHUB_TOKEN }}" -F package=@$f https://nuget.pkg.github.com/chances/
+           done
