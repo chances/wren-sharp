@@ -9,6 +9,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     strategy:
+      max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest] # TODO: Integrate CI for windows-latest
         include:
