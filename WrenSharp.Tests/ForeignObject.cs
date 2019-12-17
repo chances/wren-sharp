@@ -25,7 +25,7 @@ namespace WrenSharp.Tests
   foreign close() 
 }");
 
-            vm.Interpret(classModule, "var file = File.create(\"/tmp/wren.txt\")");
+            vm.Interpret(classModule, "var file = File.create(\"/tmp/wren_BindFileClass.txt\")");
             vm.Interpret(classModule, "file.write(\"wren script\")");
 
             vm.Dispose();
@@ -48,7 +48,7 @@ namespace WrenSharp.Tests
   foreign close() 
 }");
 
-            vm.Interpret(classModule, "var file = File.create(\"/tmp/wren.txt\")");
+            vm.Interpret(classModule, "var file = File.create(\"/tmp/wren_BindFileClassMethodTypeMismatch.txt\")");
             var ex = Assert.Throws<WrenException>(() => vm.Interpret(classModule, "file.write(75)"));
             Assert.StartsWith(ex.Message, "Foreign method 'Write' type mismatch given formal parameter 1, expected type String");
 
