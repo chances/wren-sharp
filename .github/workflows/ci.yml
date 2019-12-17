@@ -24,7 +24,7 @@ jobs:
     - name: Test
       if: success()
       run: |
-        dotnet test WrenSharp.Tests/WrenSharp.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat="lcov,opencover" /p:CoverletOutput="coverage/" /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary
+        dotnet test WrenSharp.Tests/WrenSharp.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat="lcov" /p:CoverletOutput="coverage/" /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary
     - name: Upload Code Coverage
       uses: codecov/codecov-action@v1
       with:
