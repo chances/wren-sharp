@@ -13,7 +13,7 @@
         WREN_TYPE_BOOL = 0,
         /// A double-precision floating point number.
         WREN_TYPE_NUM = 1,
-        /// A foreign class instance
+        /// A foreign class instance.
         WREN_TYPE_FOREIGN = 2,
         /// A collection of elements identified by integer index.
         WREN_TYPE_LIST = 3,

@@ -123,7 +123,8 @@ namespace Wren
                 param.ParameterType == typeof(bool) ||
                 param.ParameterType == typeof(int) ||
                 param.ParameterType == typeof(double) ||
-                param.ParameterType == typeof(string)
+                param.ParameterType == typeof(string) ||
+                param.ParameterType == typeof(object)
             );
         }
         private static bool HasCompatibleReturn(MethodInfo method)
@@ -132,22 +133,21 @@ namespace Wren
                 method.ReturnType == typeof(int) ||
                 method.ReturnType == typeof(double) ||
                 method.ReturnType == typeof(string) ||
-                method.ReturnType == typeof(object) ||
                 method.ReturnType == typeof(void);
         }
         private static bool IsNotIgnored(MemberInfo member) =>
             member.GetCustomAttribute<WrenIgnoreAttribute>() == null;
         private static (bool, object) GivenParamTypeMatches(Type paramType, ValueType given, int slot, VirtualMachine vm)
         {
-            // TODO: Support formal parameter type of object
             switch (given)
             {
                 case ValueType.WREN_TYPE_BOOL:
-                    return (paramType == typeof(bool), vm.GetSlotBool(slot));
+                    return (paramType == typeof(bool) || paramType == typeof(object), vm.GetSlotBool(slot));
                 case ValueType.WREN_TYPE_NUM:
-                    return (paramType == typeof(int) || paramType == typeof(double), vm.GetSlotDouble(slot));
+                    // TODO: Explicitly cast formal given double params to int where paramType is int
+                    return (paramType == typeof(int) || paramType == typeof(double) || paramType == typeof(object), vm.GetSlotDouble(slot));
                 case ValueType.WREN_TYPE_STRING:
-                    return (paramType == typeof(string), vm.GetSlotString(slot));
+                    return (paramType == typeof(string) || paramType == typeof(object), vm.GetSlotString(slot));
                 default:
                     return (false, null);
             }
