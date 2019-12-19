@@ -50,7 +50,7 @@ namespace WrenSharp.Tests
 
             vm.Interpret(classModule, "var file = File.create(\"/tmp/wren_BindFileClassMethodTypeMismatch.txt\")");
             var ex = Assert.Throws<WrenException>(() => vm.Interpret(classModule, "file.write(75)"));
-            Assert.StartsWith(ex.Message, "Foreign method 'Write' type mismatch given formal parameter 1, expected type String");
+            Assert.StartsWith(ex.Message, "Foreign method 'Write' parameter 'buffer' type mismatch given actual parameter of type System.Double (75 in slot 1), expected type String");
 
             vm.Dispose();
         }

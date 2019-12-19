@@ -85,24 +85,30 @@ namespace Wren
                 {
                     var foreignObject = vm.GetSlotForeign(0);
                     if (foreignObject == null || !(foreignObject is ForeignObject)) return;
-                    var givenParameters = new List<object>();
+                    var actualParameters = new List<object>();
                     for (int i = 0; i < parameters.Length; i++)
                     {
                         var paramSlot = i + 1;
+                        var parameterName = parameters[i].Name;
                         var parameterType = parameters[i].ParameterType;
-                        var givenParamType = vm.GetSlotType(paramSlot);
-                        (bool paramTypeMatches, object givenParam) =
-                            GivenParamTypeMatches(parameterType, givenParamType, paramSlot, vm);
-                        if (paramTypeMatches) givenParameters.Add(givenParam);
+                        var actualParamType = vm.GetSlotType(paramSlot);
+                        (bool paramTypeMatches, object actualParam) =
+                            GetActualParameter(parameterType, actualParamType, paramSlot, vm);
+                        if (paramTypeMatches) actualParameters.Add(actualParam);
                         else
                         {
+                            var formalParamType = actualParam.GetType();
                             ((ForeignObject) foreignObject).AbortFiber(
-                                $"Foreign method '{methodName}' type mismatch given formal parameter {paramSlot}, expected type {parameterType.Name}");
+                                $"Foreign method '{methodName}' parameter '{parameterName}' type " +
+                                    $"mismatch given actual parameter of type {formalParamType} " +
+                                    $"({actualParam} in slot {paramSlot}), expected type " +
+                                    $"{parameterType.Name}"
+                            );
                             return;
                         }
                     }
 
-                    var returnValue = invoke(foreignObject, givenParameters.ToArray());
+                    var returnValue = invoke(foreignObject, actualParameters.ToArray());
                     if (returnType != typeof(void))
                     {
                         vm.SetSlot(0, returnValue);
@@ -112,6 +118,7 @@ namespace Wren
             });
         }
 
+        #region Reflection Helpers
         private static bool IsPublic(MethodBase method) =>
             method.IsPublic && HasCompatibleParameters(method) && IsNotIgnored(method);
         private static bool HasCompatibleParameters(MethodBase method)
@@ -137,20 +144,35 @@ namespace Wren
         }
         private static bool IsNotIgnored(MemberInfo member) =>
             member.GetCustomAttribute<WrenIgnoreAttribute>() == null;
-        private static (bool, object) GivenParamTypeMatches(Type paramType, ValueType given, int slot, VirtualMachine vm)
+        private static (bool, object) GetActualParameter(Type formalType, ValueType actual, int slot, VirtualMachine vm)
         {
-            switch (given)
+            switch (actual)
             {
                 case ValueType.WREN_TYPE_BOOL:
-                    return (paramType == typeof(bool) || paramType == typeof(object), vm.GetSlotBool(slot));
+                    return (formalType == typeof(bool) || formalType == typeof(object), vm.GetSlotBool(slot));
                 case ValueType.WREN_TYPE_NUM:
-                    // TODO: Explicitly cast formal given double params to int where paramType is int
-                    return (paramType == typeof(int) || paramType == typeof(double) || paramType == typeof(object), vm.GetSlotDouble(slot));
+                    object formalParameter;
+
+                    if (formalType == typeof(int))
+                    {
+                        formalParameter = (int) vm.GetSlotDouble(slot);
+                    }
+                    else if (formalType == typeof(double) || formalType == typeof(object))
+                    {
+                        formalParameter = vm.GetSlotDouble(slot);
+                    }
+                    else
+                    {
+                        return (false, vm.GetSlotDouble(slot));
+                    }
+
+                    return (true, formalParameter);
                 case ValueType.WREN_TYPE_STRING:
-                    return (paramType == typeof(string) || paramType == typeof(object), vm.GetSlotString(slot));
+                    return (formalType == typeof(string) || formalType == typeof(object), vm.GetSlotString(slot));
                 default:
                     return (false, null);
             }
         }
+        #endregion
     }
 }
