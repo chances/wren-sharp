@@ -8,6 +8,8 @@ namespace Wren
 {
     public abstract class ForeignObject : IDisposable
     {
+        private const string UnknownActualParamType = "Unknown";
+
         internal VirtualMachine VirtualMachine { get; set; }
 
         [WrenIgnore]
@@ -97,10 +99,15 @@ namespace Wren
                         if (paramTypeMatches) actualParameters.Add(actualParam);
                         else
                         {
-                            var formalParamType = actualParam.GetType();
+                            var isActualParamTypeUnkown =
+                                actualParam is string actualParamString &&
+                                actualParamString == UnknownActualParamType;
+                            string paramType = isActualParamTypeUnkown
+                                ? UnknownActualParamType
+                                : $"{actualParam.GetType()}";
                             ((ForeignObject) foreignObject).AbortFiber(
                                 $"Foreign method '{methodName}' parameter '{parameterName}' type " +
-                                    $"mismatch given actual parameter of type {formalParamType} " +
+                                    $"mismatch given actual parameter of type {paramType} " +
                                     $"({actualParam} in slot {paramSlot}), expected type " +
                                     $"{parameterType.Name}"
                             );
@@ -121,18 +128,24 @@ namespace Wren
         #region Reflection Helpers
         private static bool IsPublic(MethodBase method) =>
             method.IsPublic && HasCompatibleParameters(method) && IsNotIgnored(method);
+        private static Type[] CompatibleParameterTypes = new Type[]
+        {
+            // TODO: Support `Nullable`s of bool, int, and double
+            // typeof(Nullable<bool>),
+            // typeof(Nullable<int>),
+            // typeof(Nullable<double>),
+            typeof(bool),
+            typeof(int),
+            typeof(double),
+            typeof(string),
+            typeof(object)
+        };
         private static bool HasCompatibleParameters(MethodBase method)
         {
             if (method.ContainsGenericParameters) return false;
             var parameters = method.GetParameters();
             if (parameters.Length == 0) return true;
-            return parameters.All(param =>
-                param.ParameterType == typeof(bool) ||
-                param.ParameterType == typeof(int) ||
-                param.ParameterType == typeof(double) ||
-                param.ParameterType == typeof(string) ||
-                param.ParameterType == typeof(object)
-            );
+            return parameters.All(param => CompatibleParameterTypes.Contains(param.ParameterType));
         }
         private static bool HasCompatibleReturn(MethodInfo method)
         {
@@ -170,7 +183,8 @@ namespace Wren
                 case ValueType.WREN_TYPE_STRING:
                     return (formalType == typeof(string) || formalType == typeof(object), vm.GetSlotString(slot));
                 default:
-                    return (false, null);
+                    // Actual parameter type doesn't match expected formal parameter type
+                    return (false, UnknownActualParamType);
             }
         }
         #endregion
