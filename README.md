@@ -6,12 +6,16 @@ C# bindings to the [Wren](http://wren.io/) scripting language.
 
 [![Code Coverage](https://codecov.io/gh/chances/wren-sharp/branch/master/graph/badge.svg)](https://codecov.io/gh/chances/wren-sharp)
 
-Test coverage via [ReportGenerator](https://danielpalme.github.io/ReportGenerator/usage.html).
+Test coverage via [Coverlet](https://github.com/tonerdo/coverlet#readme) and [ReportGenerator](https://danielpalme.github.io/ReportGenerator/usage.html).
 
 ```shell
-cd WrenSharp.Tests
-dotnet test /p:CollectCoverage=true, /p:CoverletOutputFormat="lcov,opencover" /p:CoverletOutput=coverage/,
-dotnet reportgenerator "-reports:coverage/coverage.opencover.xml" "-targetdir:coverage"
+$ ./cover.sh
+```
+
+To run coverage and open results in your default browser, run:
+
+```shell
+$ ./cover.sh open
 ```
 
 ## TODO
