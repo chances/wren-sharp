@@ -45,7 +45,7 @@ namespace WrenSharp.Tests
         {
             var vm = InitVmWithFileClass("io");
 
-            vm.Interpret("io", @"var file = File.create(""/tmp/wren.txt"")
+            vm.Interpret("io", @"var file = File.create(""/tmp/wren_WrenBindForeignClass.txt"")
 file.write(""some text"") 
 file.close()");
             // Test passes if code runs without error
@@ -60,7 +60,7 @@ file.close()");
 
             var runtimeError = Assert.Throws<WrenException>(() =>
             {
-                vm.Interpret("io", @"var file = File.create(""/tmp/wren.txt"") 
+                vm.Interpret("io", @"var file = File.create(""/tmp/wren_WrenBindForeignClassAbortFiber.txt"") 
 file.close()
 file.write(""some text"")");
             });

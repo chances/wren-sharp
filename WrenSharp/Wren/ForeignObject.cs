@@ -8,6 +8,8 @@ namespace Wren
 {
     public abstract class ForeignObject : IDisposable
     {
+        private const string UnknownActualParamType = "Unknown";
+
         internal VirtualMachine VirtualMachine { get; set; }
 
         [WrenIgnore]
@@ -85,24 +87,35 @@ namespace Wren
                 {
                     var foreignObject = vm.GetSlotForeign(0);
                     if (foreignObject == null || !(foreignObject is ForeignObject)) return;
-                    var givenParameters = new List<object>();
+                    var actualParameters = new List<object>();
                     for (int i = 0; i < parameters.Length; i++)
                     {
                         var paramSlot = i + 1;
+                        var parameterName = parameters[i].Name;
                         var parameterType = parameters[i].ParameterType;
-                        var givenParamType = vm.GetSlotType(paramSlot);
-                        (bool paramTypeMatches, object givenParam) =
-                            GivenParamTypeMatches(parameterType, givenParamType, paramSlot, vm);
-                        if (paramTypeMatches) givenParameters.Add(givenParam);
+                        var actualParamType = vm.GetSlotType(paramSlot);
+                        (bool paramTypeMatches, object actualParam) =
+                            GetActualParameter(parameterType, actualParamType, paramSlot, vm);
+                        if (paramTypeMatches) actualParameters.Add(actualParam);
                         else
                         {
+                            var isActualParamTypeUnkown =
+                                actualParam is string actualParamString &&
+                                actualParamString == UnknownActualParamType;
+                            string paramType = isActualParamTypeUnkown
+                                ? UnknownActualParamType
+                                : $"{actualParam.GetType()}";
                             ((ForeignObject) foreignObject).AbortFiber(
-                                $"Foreign method '{methodName}' type mismatch given formal parameter {paramSlot}, expected type {parameterType.Name}");
+                                $"Foreign method '{methodName}' parameter '{parameterName}' type " +
+                                    $"mismatch given actual parameter of type {paramType} " +
+                                    $"({actualParam} in slot {paramSlot}), expected type " +
+                                    $"{parameterType.Name}"
+                            );
                             return;
                         }
                     }
 
-                    var returnValue = invoke(foreignObject, givenParameters.ToArray());
+                    var returnValue = invoke(foreignObject, actualParameters.ToArray());
                     if (returnType != typeof(void))
                     {
                         vm.SetSlot(0, returnValue);
@@ -112,19 +125,27 @@ namespace Wren
             });
         }
 
+        #region Reflection Helpers
         private static bool IsPublic(MethodBase method) =>
             method.IsPublic && HasCompatibleParameters(method) && IsNotIgnored(method);
+        private static Type[] CompatibleParameterTypes = new Type[]
+        {
+            // TODO: Support `Nullable`s of bool, int, and double
+            // typeof(Nullable<bool>),
+            // typeof(Nullable<int>),
+            // typeof(Nullable<double>),
+            typeof(bool),
+            typeof(int),
+            typeof(double),
+            typeof(string),
+            typeof(object)
+        };
         private static bool HasCompatibleParameters(MethodBase method)
         {
             if (method.ContainsGenericParameters) return false;
             var parameters = method.GetParameters();
             if (parameters.Length == 0) return true;
-            return parameters.All(param =>
-                param.ParameterType == typeof(bool) ||
-                param.ParameterType == typeof(int) ||
-                param.ParameterType == typeof(double) ||
-                param.ParameterType == typeof(string)
-            );
+            return parameters.All(param => CompatibleParameterTypes.Contains(param.ParameterType));
         }
         private static bool HasCompatibleReturn(MethodInfo method)
         {
@@ -132,25 +153,40 @@ namespace Wren
                 method.ReturnType == typeof(int) ||
                 method.ReturnType == typeof(double) ||
                 method.ReturnType == typeof(string) ||
-                method.ReturnType == typeof(object) ||
                 method.ReturnType == typeof(void);
         }
         private static bool IsNotIgnored(MemberInfo member) =>
             member.GetCustomAttribute<WrenIgnoreAttribute>() == null;
-        private static (bool, object) GivenParamTypeMatches(Type paramType, ValueType given, int slot, VirtualMachine vm)
+        private static (bool, object) GetActualParameter(Type formalType, ValueType actual, int slot, VirtualMachine vm)
         {
-            // TODO: Support formal parameter type of object
-            switch (given)
+            switch (actual)
             {
                 case ValueType.WREN_TYPE_BOOL:
-                    return (paramType == typeof(bool), vm.GetSlotBool(slot));
+                    return (formalType == typeof(bool) || formalType == typeof(object), vm.GetSlotBool(slot));
                 case ValueType.WREN_TYPE_NUM:
-                    return (paramType == typeof(int) || paramType == typeof(double), vm.GetSlotDouble(slot));
+                    object formalParameter;
+
+                    if (formalType == typeof(int))
+                    {
+                        formalParameter = (int) vm.GetSlotDouble(slot);
+                    }
+                    else if (formalType == typeof(double) || formalType == typeof(object))
+                    {
+                        formalParameter = vm.GetSlotDouble(slot);
+                    }
+                    else
+                    {
+                        return (false, vm.GetSlotDouble(slot));
+                    }
+
+                    return (true, formalParameter);
                 case ValueType.WREN_TYPE_STRING:
-                    return (paramType == typeof(string), vm.GetSlotString(slot));
+                    return (formalType == typeof(string) || formalType == typeof(object), vm.GetSlotString(slot));
                 default:
-                    return (false, null);
+                    // Actual parameter type doesn't match expected formal parameter type
+                    return (false, UnknownActualParamType);
             }
         }
+        #endregion
     }
 }

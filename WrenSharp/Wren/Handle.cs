@@ -27,6 +27,13 @@ namespace Wren
         }
     }
 
+    /// <summary>
+    /// A handle to a Wren object.
+    /// 
+    /// This lets code outside of the VM hold a persistent reference to an object. After a handle
+    /// is acquired, and until it is released, this ensures the garbage collector will not reclaim
+    /// the object it references.
+    /// </summary>
     public sealed class Handle : IDisposable
     {
         private WrenHandleSafeHandle _rawHandle;
@@ -36,7 +43,7 @@ namespace Wren
         /// <summary>
         /// Whether this Wren handle pointer is set and is not released.
         /// 
-        /// Does not guarentee this is a valid reference into the Wren virtual machine!
+        /// Does not guarantee this is a valid reference into the Wren virtual machine!
         /// </summary>
         public bool HasReference => !_rawHandle.IsInvalid && !_rawHandle.IsClosed;
 
@@ -51,6 +58,10 @@ namespace Wren
             _rawHandle = handle;
         }
 
+        /// <summary>
+        /// Releases the reference stored in this handle. After calling, this <see cref="Handle"/>
+        /// can no longer be used.
+        /// </summary>
         public void Dispose()
         {
             _rawHandle.Dispose();
