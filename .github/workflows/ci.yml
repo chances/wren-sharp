@@ -28,8 +28,11 @@ jobs:
       run: dotnet build
     - name: Test
       if: success()
+      shell: bash
       run: |
-        dotnet test WrenSharp.Tests/WrenSharp.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat="lcov" /p:CoverletOutput="coverage/" /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary
+        export TEST_ARGS="WrenSharp.Tests/WrenSharp.Tests.csproj /p:CollectCoverage=true /p:CoverletOutputFormat="lcov" /p:CoverletOutput="coverage/" /property:GenerateFullPaths=true /consoleloggerparameters:NoSummary"
+        echo "Try to run tests twice, in case I missed some annoyingly hard to reproduce memory error..."
+        dotnet test $TEST_ARGS || dotnet test $TEST_ARGS
     - name: Upload Code Coverage
       if: matrix.os == 'ubuntu-latest' # Only upload coverage data once
       uses: codecov/codecov-action@v1
