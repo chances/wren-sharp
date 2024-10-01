@@ -3,6 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <PackageIcon>wren-logo.png</PackageIcon>
   </PropertyGroup>
 
   <PropertyGroup>
@@ -44,6 +45,11 @@
   <ItemGroup>
     <None Include="$(WrenSharedLibraryPathOsx)" Pack="true" PackageCopyToOutput="true" PackagePath="runtimes/osx/native" />
     <None Include="$(WrenSharedLibraryPathLinux)" Pack="true" PackageCopyToOutput="true" PackagePath="runtimes/linux-x64/native" />
+    <None Include="..\assets\wren-logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+      <Link>wren-logo.png</Link>
+    </None>
     <!-- TODO: Package for windows -->
     <!-- <file platform="windows" src="runtimes/win-x64/native/libSkiaSharp.dll" /> -->
     <!-- <file platform="windows" src="runtimes/win-x86/native/libSkiaSharp.dll" /> -->
