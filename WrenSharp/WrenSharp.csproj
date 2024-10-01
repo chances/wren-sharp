@@ -17,10 +17,20 @@
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>© Chance Snow. All rights reserved.</Copyright>
     <PackageIcon>wren-logo.png</PackageIcon>
-    <PackageReadmeFile>../README.md</PackageReadmeFile>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
     <PackageTags>scripting;ios;android;linux;windows;uwp;macos;cross-platform;wren</PackageTags>
     <PackageReleaseNotes>Please visit https://github.com/chances/wren-sharp/releases to view the release notes.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/chances/wren-sharp</RepositoryUrl>
+  </PropertyGroup>
+
+  <!-- TODO: How to package native stuff: https://github.com/NuGet/Home/issues/6645 -->
+  <PropertyGroup>
+    <IsWindows>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsWindows>
+    <IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinux>
+    <IsOsx>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</IsOsx>
+    <WrenSharedLibraryPathWindows>$(MSBuildProjectDirectory)/../wren/lib/libwren.dll</WrenSharedLibraryPathWindows>
+    <WrenSharedLibraryPathOsx>$(MSBuildProjectDirectory)/../wren/lib/libwren.dylib</WrenSharedLibraryPathOsx>
+    <WrenSharedLibraryPathLinux>$(MSBuildProjectDirectory)/../wren/lib/libwren.so</WrenSharedLibraryPathLinux>
   </PropertyGroup>
 
   <Target Name="InitWrenGitSubmodule" AfterTargets="BeforeBuild">
@@ -28,18 +38,27 @@
     <!-- <Exec Command="dir" WorkingDirectory="$(SolutionDir)" Condition="'$(OS)' == 'Windows_NT'" /> -->
     <Exec Command="git submodule init" WorkingDirectory="$(MSBuildProjectDirectory)/.." />
     <Exec Command="git submodule update" WorkingDirectory="$(MSBuildProjectDirectory)/.." />
+  </Target>
+  <Target Name="BuildVmPosix" AfterTargets="InitWrenGitSubmodule" Condition="'$(IsWindows)' == 'False'">
     <Message Text="Compiling Wren VM..." Importance="high" />
+    <Exec Command="docker build ." WorkingDirectory="$(MSBuildProjectDirectory)/.." />
     <Exec Command="make vm" WorkingDirectory="$(MSBuildProjectDirectory)/../wren" />
     <Message Text="Compiled." Importance="high" />
   </Target>
 
-  <!-- TODO: How to package native stuff: https://github.com/NuGet/Home/issues/6645 -->
-  <PropertyGroup>
-    <IsLinux>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::Linux)))</IsLinux>
-    <IsOsx>$([System.Runtime.InteropServices.RuntimeInformation]::IsOSPlatform($([System.Runtime.InteropServices.OSPlatform]::OSX)))</IsOsx>
-    <WrenSharedLibraryPathOsx>$(MSBuildProjectDirectory)/../wren/lib/libwren.dylib</WrenSharedLibraryPathOsx>
-    <WrenSharedLibraryPathLinux>$(MSBuildProjectDirectory)/../wren/lib/libwren.so</WrenSharedLibraryPathLinux>
-  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\assets\wren-logo.png">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+      <Link>wren-logo.png</Link>
+    </None>
+    <None Include="..\README.md">
+      <Pack>True</Pack>
+      <PackagePath></PackagePath>
+      <Link>README.md</Link>
+    </None>
+  </ItemGroup>
+
   <Target Name="CopyWrenSharedLibrary" AfterTargets="AfterBuild">
     <Copy SourceFiles="$(WrenSharedLibraryPathOsx)" DestinationFolder="$(OutDir)" Condition="$(IsOsx)" />
     <Copy SourceFiles="$(WrenSharedLibraryPathLinux)" DestinationFolder="$(OutDir)" Condition="$(IsLinux)" />
@@ -48,17 +67,8 @@
   <ItemGroup>
     <None Include="$(WrenSharedLibraryPathOsx)" Pack="true" PackageCopyToOutput="true" PackagePath="runtimes/osx/native" />
     <None Include="$(WrenSharedLibraryPathLinux)" Pack="true" PackageCopyToOutput="true" PackagePath="runtimes/linux-x64/native" />
-    <None Include="..\assets\wren-logo.png">
-      <Pack>True</Pack>
-      <PackagePath></PackagePath>
-      <Link>wren-logo.png</Link>
-    </None>
     <!-- TODO: Package for windows -->
-    <!-- <file platform="windows" src="runtimes/win-x64/native/libSkiaSharp.dll" /> -->
-    <!-- <file platform="windows" src="runtimes/win-x86/native/libSkiaSharp.dll" /> -->
-    <!-- <file platform="windows" src="runtimes/win10-x64/nativeassets/uap10.0/libSkiaSharp.dll" /> -->
-    <!-- <file platform="windows" src="runtimes/win10-x86/nativeassets/uap10.0/libSkiaSharp.dll" /> -->
-    <!-- <file platform="windows" src="runtimes/win10-arm/nativeassets/uap10.0/libSkiaSharp.dll" /> -->
+    <!-- <None Include="$(WrenSharedLibraryPathWindows)" Pack="true" PackageCopyToOutput="true" PackagePath="runtimes/windows-x64/native" /> -->
   </ItemGroup>
 
 </Project>
