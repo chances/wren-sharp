@@ -3,21 +3,21 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Description>C# bindings to the Wren scripting language.</Description>
-    <Version>0.4.0</Version>
-    <PackageIcon>wren-logo.png</PackageIcon>
     <AssemblyVersion>0.4.0</AssemblyVersion>
   </PropertyGroup>
 
   <PropertyGroup>
     <Title>WrenSharp</Title>
     <PackageId>WrenSharp</PackageId>
-    <VersionPrefix>0.1.0</VersionPrefix>
-    <PackageDescription>A cross-platform scripting API for .NET platforms binding to the Wren scripting language.</PackageDescription>
+    <Version>0.4.0</Version>
+    <Description>Cross-platform bindings to the Wren scripting language.</Description>
+    <PackageDescription>Cross-platform bindings to the Wren scripting language.</PackageDescription>
     <Authors>Chance Snow</Authors>
     <Company>Chance Snow</Company>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <Copyright>© Chance Snow. All rights reserved.</Copyright>
+    <PackageIcon>wren-logo.png</PackageIcon>
+    <PackageReadmeFile>../README.md</PackageReadmeFile>
     <PackageTags>scripting;ios;android;linux;windows;uwp;macos;cross-platform;wren</PackageTags>
     <PackageReleaseNotes>Please visit https://github.com/chances/wren-sharp/releases to view the release notes.</PackageReleaseNotes>
     <RepositoryUrl>https://github.com/chances/wren-sharp</RepositoryUrl>
